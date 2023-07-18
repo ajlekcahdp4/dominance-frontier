@@ -1,1 +1,1 @@
-# cxx-project-template
+# dominance-frontier
