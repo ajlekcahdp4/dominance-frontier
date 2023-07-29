@@ -122,6 +122,9 @@ public:
         break;
       };
     }
+    std::for_each(Graph.begin(), Graph.end(), [](Node &Nd) {
+      Nd.erase(std::remove(Nd.begin(), Nd.end(), &Nd), Nd.end());
+    });
   }
 
   GraphTy generate() {
