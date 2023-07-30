@@ -14,14 +14,6 @@
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
 
-inline unsigned getRandom(unsigned Lower, unsigned Upper, unsigned Seed) {
-  std::random_device DEV;
-  std::mt19937 RNG(DEV());
-  RNG.seed(Seed);
-  std::uniform_int_distribution<std::mt19937::result_type> Dist(Lower, Upper);
-  return Dist(RNG);
-}
-
 struct Node final : std::vector<Node *> {
   unsigned Val;
   Node(unsigned Val) : vector(), Val(Val) {}
@@ -33,6 +25,13 @@ struct GraphTy : public std::vector<Node> {
 class ReducibleGraphBuilder final {
   GraphTy Graph;
   unsigned MaxSz;
+  std::mt19937 RandEngine;
+
+  unsigned getUniformRandom(unsigned Lower, unsigned Upper) {
+    std::uniform_int_distribution<decltype(RandEngine)::result_type> Dist(
+        Lower, Upper);
+    return Dist(RandEngine);
+  }
 
   Node *addNode(Node *Nd) {
     auto *New = insertNode();
@@ -43,7 +42,7 @@ class ReducibleGraphBuilder final {
       break;
     }
     case 1: {
-      switch (getRandom(0, 2, Graph.size())) {
+      switch (getUniformRandom(0, 2)) {
       case 0: {
         auto *Old = Nd->back();
         Nd->pop_back();
@@ -64,7 +63,7 @@ class ReducibleGraphBuilder final {
       break;
     }
     case 2: {
-      switch (getRandom(0, 2, Graph.size())) {
+      switch (getUniformRandom(0, 2)) {
       case 0: {
         std::copy(Nd->begin(), Nd->end(), std::back_inserter(*New));
         Nd->erase(Nd->begin(), Nd->end());
@@ -95,7 +94,10 @@ class ReducibleGraphBuilder final {
   }
 
 public:
-  ReducibleGraphBuilder(unsigned Sz) : MaxSz(Sz) { Graph.reserve(MaxSz); }
+  ReducibleGraphBuilder(unsigned Sz, unsigned long long Seed)
+      : MaxSz(Sz), RandEngine(Seed) {
+    Graph.reserve(MaxSz);
+  }
 
   void addSelfLoop(Node *Nd) {
     if (Nd->size() < 2 && std::find(Nd->begin(), Nd->end(), Nd) == Nd->end())
@@ -110,9 +112,9 @@ public:
 
   void generateImpl() {
     insertNode();
-    for (int i = 0; i < MaxSz; ++i) {
-      auto N = getRandom(0, Graph.size() - 1, i);
-      auto Op = getRandom(0, 1, i);
+    for (int I = 0; I < MaxSz; ++I) {
+      auto N = getUniformRandom(0, Graph.size() - 1);
+      auto Op = getUniformRandom(0, 1);
       switch (Op) {
       case 0:
         addNode(&Graph[N]);
