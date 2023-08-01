@@ -40,7 +40,7 @@ static void Print(const NodetoDominatorsTy &Dominators) {
 using namespace lqvm;
 int main(int Argc, char **Argv) {
   cl::ParseCommandLineOptions(Argc, Argv, "");
-  ReducibleGraphBuilder GB(10, Seed);
+  ReducibleGraphBuilder GB(GenIterations, Seed);
   auto G = GB.generate();
   if (DumpCFG)
     G.dumpDot(std::cout);
