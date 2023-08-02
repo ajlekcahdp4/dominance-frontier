@@ -62,6 +62,11 @@ inline NodetoDominatorsTy ComputeDominators(const GraphTy &G) {
   return NodeToDominators;
 }
 
+inline size_t GetIndex(const Node *Nd, auto Order) {
+  return std::distance(Order.begin(),
+                       std::find(Order.begin(), Order.end(), Nd));
+}
+
 inline const Node *
 Intersect(const Node *First, const Node *Second, auto PO,
           std::unordered_map<const Node *, const Node *> &IDoms) {
@@ -69,16 +74,18 @@ Intersect(const Node *First, const Node *Second, auto PO,
   auto *Finger2 = Second;
   while (Finger1 != Finger2) {
     auto Idx1 =
-        std::distance(PO.begin(), std::find(PO.begin(), PO.end(), First));
+        std::distance(PO.begin(), std::find(PO.begin(), PO.end(), Finger1));
     auto Idx2 =
-        std::distance(PO.begin(), std::find(PO.begin(), PO.end(), Second));
+        std::distance(PO.begin(), std::find(PO.begin(), PO.end(), Finger2));
     while (Idx1 < Idx2) {
       Finger1 = IDoms[Finger1];
-      Idx1 = std::distance(PO.begin(), std::find(PO.begin(), PO.end(), First));
+      Idx1 =
+          std::distance(PO.begin(), std::find(PO.begin(), PO.end(), Finger1));
     }
     while (Idx2 < Idx1) {
       Finger2 = IDoms[Finger2];
-      Idx2 = std::distance(PO.begin(), std::find(PO.begin(), PO.end(), Second));
+      Idx2 =
+          std::distance(PO.begin(), std::find(PO.begin(), PO.end(), Finger2));
     }
   }
   return Finger1;
@@ -94,11 +101,18 @@ ComputeIDom(const GraphTy &G) {
   while (Changed) {
     Changed = false;
     auto RPO = llvm::ReversePostOrderTraversal(&G.front());
+    auto PickParent = [RPO](const auto *Nd) -> const Node * {
+      for (const auto *Parent : Nd->Parents) {
+        if (GetIndex(Parent, RPO) < GetIndex(Nd, RPO))
+          return Parent;
+      }
+      return nullptr;
+    };
     for (auto *CNode : llvm::drop_begin(RPO)) {
-      const auto *NewIdom = *CNode->Parents.begin();
-      for (auto *Parent : llvm::drop_begin(CNode->Parents)) {
-        if (IDom[Parent]) {
-          auto PO = llvm::drop_begin(llvm::post_order(&G.front()));
+      const auto *NewIdom = PickParent(CNode);
+      for (auto *Parent : CNode->Parents) {
+        if (Parent != NewIdom && IDom[Parent]) {
+          auto PO = llvm::post_order(&G.front());
           NewIdom = Intersect(Parent, NewIdom, PO, IDom);
         }
       }
