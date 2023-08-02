@@ -40,7 +40,9 @@ include(cmake/dependencies.cmake)
 
 set(DOMFRONT_SOURCES
     src/main.cc 
-    src/ReducibleGraph.cc)
+    src/ReducibleGraph.cc
+    src/Dominators.cc
+    )
 
 add_executable(domfront ${DOMFRONT_SOURCES})
 target_enable_linter(domfront)
