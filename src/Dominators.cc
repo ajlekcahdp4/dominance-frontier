@@ -28,9 +28,9 @@ void ComputeDominatorsIteration(const GraphTy &G, NodetoDominatorsTy &M) {
     std::vector<const Node *> Doms = AllNodesSet;
     for (auto *Parent : Nd.Parents)
       if (M.contains(Parent))
-        Doms = utils::OrderedIntersection(Doms, M[Parent]);
+        Doms = utils::OrderedIntersection(Doms, M.at(Parent));
     Doms.push_back(&Nd);
-    if (!Nd.Parents.empty())
+    if (Nd.Val != 0) // Start Node
       M[&Nd] = std::move(Doms);
   }
 }
