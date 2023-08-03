@@ -36,6 +36,10 @@ static cl::opt<bool> PrintIDomOpt("print-idom",
 static cl::opt<std::string>
     DumpDomTreeOpt("dump-dom-tree", cl::desc("Dump Dom Tree to dot file"),
                    cl::value_desc("filename"), cl::cat(Options));
+static cl::opt<std::string> DumpDJOpt("dump-dj",
+                                      cl::desc("Dump DJ graph to dot file"),
+                                      cl::value_desc("filename"),
+                                      cl::cat(Options));
 
 void PrintDominators(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
   for (auto &&[NodePtr, Doms] : Dominators) {
@@ -77,6 +81,15 @@ int main(int Argc, char **Argv) {
     std::ofstream DotFile(DumpDomTreeOpt);
     if (DotFile.is_open())
       DumpDomTree(ComputeIDom(G), DotFile);
+    else {
+      std::cerr << "Unable to open file";
+      return EXIT_FAILURE;
+    }
+  }
+  if (DumpDJOpt.getNumOccurrences()) {
+    std::ofstream DotFile(DumpDJOpt);
+    if (DotFile.is_open())
+      DumpDJ(ComputeDJ(ComputeIDom(G), G), DotFile);
     else {
       std::cerr << "Unable to open file";
       return EXIT_FAILURE;
