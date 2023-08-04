@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ReducibleGraph.h"
+#include "Tree.h"
 #include "Utils.h"
 
 #include <map>
@@ -17,11 +18,12 @@ NodetoDominatorsTy ComputeDominators(const GraphTy &G);
 
 std::map<const Node *, const Node *> ComputeIDom(const GraphTy &G);
 
+Tree BuildDomTree(const GraphTy &G);
+
 NodetoDominatorsTy ComputeDJ(const std::map<const Node *, const Node *> &IDom,
                              const GraphTy &G);
 
 void DumpDJ(const NodetoDominatorsTy &DJ, std::ostream &OS);
 
-void DumpDomTree(const std::map<const Node *, const Node *> &IDom,
-                 std::ostream &OS);
+void DumpDomTree(const Tree &DomTree, std::ostream &OS);
 } // namespace lqvm
