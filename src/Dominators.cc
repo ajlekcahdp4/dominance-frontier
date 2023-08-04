@@ -10,6 +10,8 @@
 #include <llvm/ADT/PostOrderIterator.h>
 #include <llvm/ADT/STLExtras.h>
 
+#include <string_view>
+
 namespace lqvm {
 size_t ComputeHash(const NodetoDominatorsTy &M) {
   size_t Hash = 0;
@@ -20,7 +22,7 @@ size_t ComputeHash(const NodetoDominatorsTy &M) {
   return Hash;
 }
 
-void ComputeDominatorsIteration(const GraphTy &G, NodetoDominatorsTy &M) {
+void ComputeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
   std::vector<const Node *> AllNodesSet;
   for (auto &&Nd : G)
     AllNodesSet.push_back(&Nd);
@@ -35,7 +37,7 @@ void ComputeDominatorsIteration(const GraphTy &G, NodetoDominatorsTy &M) {
   }
 }
 
-NodetoDominatorsTy ComputeDominators(const GraphTy &G) {
+NodetoDominatorsTy ComputeDominators(const GraphTy<Node> &G) {
   NodetoDominatorsTy NodeToDominators;
   NodeToDominators[&G.front()] = std::vector<const Node *>{&G.front()};
   auto NewHash = ComputeHash(NodeToDominators);
@@ -67,7 +69,7 @@ const Node *IntersectNodes(const Node *First, const Node *Second, auto PO,
   return Finger1;
 }
 
-std::map<const Node *, const Node *> ComputeIDom(const GraphTy &G) {
+std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
   std::map<const Node *, const Node *> IDom;
   for (auto &&Nd : G)
     IDom[&Nd] = nullptr;
@@ -100,9 +102,9 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy &G) {
   return IDom;
 }
 
-GraphTy BuildDomTree(const GraphTy &G) {
+GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
   auto IDom = ComputeIDom(G);
-  GraphTy T;
+  GraphTy<Node> T;
   T.reserve(G.size());
   for (auto [Nd, Dom] : IDom) {
     auto IsCurNode = [Nd](const auto &Pair) { return Pair.second == Nd; };
@@ -117,7 +119,7 @@ GraphTy BuildDomTree(const GraphTy &G) {
   return T;
 }
 
-void DumpDomTree(const GraphTy &DomTree, std::ostream &OS) {
+void DumpDomTree(const GraphTy<Node> &DomTree, std::ostream &OS) {
   OS << "digraph  cluster_DomTree {\n";
   for (auto &&Nd : DomTree)
     OS << "Node_" << Nd.Val << " ["
@@ -129,36 +131,51 @@ void DumpDomTree(const GraphTy &DomTree, std::ostream &OS) {
   OS << "}";
 }
 
-GraphTy ComputeDJ(const GraphTy &G) {
+GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
   auto IDom = ComputeIDom(G);
-  GraphTy DJ;
+  GraphTy<DJNode> DJ;
   DJ.reserve(G.size());
   for (auto &&Nd : G)
-    DJ.push_back(Node(Nd.Val));
+    DJ.emplace_back(Nd.Val);
   for (auto [Nd, Dom] : IDom)
     if (Nd->Val != 0)
-      DJ[Dom->Val].push_back(const_cast<Node *>(Nd));
+      DJ[Dom->Val].adoptChild(DJ.GetOrInsertNode(Nd->Val));
   assert(DJ.size() == G.size());
   for (auto &Nd : G) {
     if (Nd.Parents.size() > 1)
       for (auto *Parent : Nd.Parents) {
         auto &Vec = DJ[Parent->Val];
-        if (std::find(Vec.begin(), Vec.end(), &Nd) == Vec.end())
-          DJ[Parent->Val].push_back(const_cast<Node *>(&Nd));
+        if (std::find_if(Vec.begin(), Vec.end(), [&Nd, &DJ](const auto &Pair) {
+              return Pair.first == DJ.GetOrInsertNode(Nd.Val);
+            }) == Vec.end())
+          DJ[Parent->Val].addBastard(DJ.GetOrInsertNode(Nd.Val));
       }
   }
   return DJ;
 }
 
-void DumpDJ(const GraphTy &DJ, std::ostream &OS) {
+void DumpDJ(const GraphTy<DJNode> &DJ, std::ostream &OS) {
   OS << "digraph  cluster_DJ {\n";
   for (auto &&Nd : DJ)
     OS << "Node_" << Nd.Val << " ["
        << "shape=circle, label=\"" << Nd.Val << "\"];\n";
   for (auto &&Nd : DJ)
-    for (auto *Child : Nd)
-      OS << "Node_" << Nd.Val << " -> Node_" << Child->Val << ";\n";
+    for (auto &Pair : Nd) {
+      std::string_view Color = Pair.second ? "black" : "red";
+      OS << "Node_" << Nd.Val << " -> Node_" << Pair.first->Val << " [color=\""
+         << Color
+         << "\"]"
+            ";\n";
+    }
   OS << "}";
+}
+
+GraphTy<DJNode> BuildDF(const GraphTy<Node> &G) {
+  auto DJ = ComputeDJ(G);
+  auto BastardOwners = llvm::make_filter_range(DJ, [](const DJNode &Nd) {
+    return std::any_of(Nd.begin(), Nd.end(),
+                       [](const auto &Pair) { return !Pair.second; });
+  });
 }
 
 } // namespace lqvm
