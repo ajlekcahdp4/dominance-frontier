@@ -16,6 +16,7 @@
 #include <ostream>
 #include <random>
 #include <set>
+#include <string_view>
 
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
@@ -77,7 +78,21 @@ public:
     }
     return std::addressof(*Found);
   }
+
+  void dumpDot(std::ostream &OS, std::string_view Title) const;
 };
+
+template <typename NodeTy>
+void GraphTy<NodeTy>::dumpDot(std::ostream &OS, std::string_view Title) const {
+  OS << "digraph cluster_1 {\n";
+  OS << "label=\"" << Title << "\";\n";
+  auto DeclareNodesAndEdges = [&OS](const NodeTy &Nd) {
+    Nd.dumpSelf(OS);
+    Nd.dumpChildrenEdges(OS);
+  };
+  std::for_each(begin(), end(), DeclareNodesAndEdges);
+  OS << "\t}\n";
+}
 
 class ReducibleGraphBuilder final {
   GraphTy<Node> Graph;
@@ -166,8 +181,6 @@ public:
     return &Graph.back();
   }
 
-  void dumpDot(std::ostream &OS) const;
-
   void generateImpl() {
     insertNode();
     for (unsigned I = 0; I < MaxSz; ++I) {
@@ -193,17 +206,6 @@ public:
     return std::move(Graph);
   }
 };
-
-template <typename NodeTy>
-void GraphTy<NodeTy>::dumpDot(std::ostream &OS) const {
-  OS << "digraph cluster_1 {\n";
-  auto DeclareNodesAndEdges = [&OS](const NodeTy &Nd) {
-    Nd.dumpSelf(OS);
-    Nd.dumpChildrenEdges(OS);
-  };
-  std::for_each(begin(), end(), DeclareNodesAndEdges);
-  OS << "\t}\n";
-}
 
 } // namespace lqvm
 

@@ -71,7 +71,7 @@ int main(int Argc, char **Argv) {
   if (DumpCFG.getNumOccurrences()) {
     std::ofstream DotFile(DumpCFG);
     if (DotFile.is_open())
-      G.dumpDot(DotFile);
+      G.dumpDot(DotFile, "Control Flow Graph");
     else {
       std::cerr << "Unable to open file";
       return EXIT_FAILURE;
@@ -103,7 +103,7 @@ int main(int Argc, char **Argv) {
     std::ofstream DotFile(DumpDFOpt);
     if (DotFile.is_open()) {
       auto DF = BuildDF(G);
-      DF.dumpDot(DotFile);
+      DF.dumpDot(DotFile, "Dominance Frontier");
     } else {
       std::cerr << "Unable to open file";
       return EXIT_FAILURE;
