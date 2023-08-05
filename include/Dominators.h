@@ -93,4 +93,6 @@ void DumpDJ(const GraphTy<DJNode> &DJ, std::ostream &OS);
 void DumpDomTree(const GraphTy<Node> &DomTree, std::ostream &OS);
 
 GraphTy<Node> BuildDF(const GraphTy<Node> &G);
+
+GraphTy<Node> BuildIDF(const GraphTy<Node> &G);
 } // namespace lqvm
