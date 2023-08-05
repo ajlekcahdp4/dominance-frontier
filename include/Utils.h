@@ -6,6 +6,8 @@
 // ----------------------------------------------------------------------------
 #pragma once
 
+#include <llvm/ADT/STLExtras.h>
+
 #include <algorithm>
 #include <vector>
 
@@ -20,11 +22,27 @@ Cont OrderedIntersection(const Cont &First, const Cont &Second) {
   return Res;
 }
 
-template <typename Range>
-inline size_t GetIndexIn(const Node *Nd, Range Order) {
+template <typename Range, typename NodeTy>
+inline size_t GetIndexIn(const NodeTy *Nd, Range Order) {
   auto Found = std::find(Order.begin(), Order.end(), Nd);
   assert(Found != Order.end());
   return std::distance(Order.begin(), Found);
 }
+
+template <typename ContTy>
+inline auto first_match(const ContTy &Cont1, const ContTy &Cont2)
+    -> decltype(Cont1.cbegin()) {
+  auto FirstIt = Cont1.cbegin();
+  auto FirstEnd = Cont1.cend();
+  while (FirstIt != FirstEnd) {
+    auto FoundIt = llvm::find(Cont2, *FirstIt);
+    if (FoundIt != Cont2.cend())
+      break;
+    ++FirstIt;
+  }
+
+  return FirstIt;
+}
+
 } // namespace utils
 } // namespace lqvm
