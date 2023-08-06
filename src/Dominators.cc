@@ -120,19 +120,6 @@ GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
   return T;
 }
 
-void DumpDomTree(const GraphTy<Node> &DomTree, std::ostream &OS) {
-  OS << "digraph  cluster_DomTree {\n";
-  OS << "label=\"Dom Tree\";\n";
-  for (auto &&Nd : DomTree)
-    OS << "Node_" << Nd.Val << " ["
-       << "shape=circle, label=\"" << Nd.Val << "\"];\n";
-  for (auto &&Nd : DomTree)
-    for (auto *Child : Nd)
-      OS << "Node_" << Nd.Val << " -> "
-         << "Node_" << Child->Val << ";\n";
-  OS << "}";
-}
-
 GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
   auto IDom = ComputeIDom(G);
   GraphTy<DJNode> DJ;
@@ -154,23 +141,6 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
       }
   }
   return DJ;
-}
-
-void DumpDJ(const GraphTy<DJNode> &DJ, std::ostream &OS) {
-  OS << "digraph  cluster_DJ {\n";
-  OS << "label=\"DJ-graph\";\n";
-  for (auto &&Nd : DJ)
-    OS << "Node_" << Nd.Val << " ["
-       << "shape=circle, label=\"" << Nd.Val << "\"];\n";
-  for (auto &&Nd : DJ)
-    for (auto &Pair : Nd) {
-      std::string_view Color = Pair.second ? "black" : "red";
-      OS << "Node_" << Nd.Val << " -> Node_" << Pair.first->Val << " [color=\""
-         << Color
-         << "\"]"
-            ";\n";
-    }
-  OS << "}";
 }
 
 GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
