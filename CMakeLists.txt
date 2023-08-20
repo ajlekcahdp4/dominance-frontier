@@ -30,6 +30,8 @@ if(${THREAD_SANITIZE})
     add_link_options(-fsanitize=thread -fno-omit-frame-pointer)
 endif()
 
+add_compile_options (-fno-rtti)
+
 if(THREAD_SANITIZE AND SANITIZE)
     message(FATAL_ERROR "Thread and address sanitizer can't be used together")
 endif()
@@ -37,6 +39,15 @@ endif()
 include(cmake/functions.cmake)
 include(cmake/dependencies.cmake)
 
+find_package(FLEX REQUIRED)
+find_package(BISON REQUIRED)
+
+bison_target(parser src/parser.y ${CMAKE_CURRENT_BINARY_DIR}/parser.y.cc DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/graph_parser.h)
+flex_target(scanner src/scanner.l ${CMAKE_CURRENT_BINARY_DIR}/scanner.l.cc DEFINES_FILE)
+add_flex_bison_dependency(scanner parser)
+
+add_library(bison_parser STATIC ${BISON_parser_OUTPUTS} ${FLEX_scanner_OUTPUTS})
+target_include_directories(bison_parser PUBLIC include ${CMAKE_CURRENT_BINARY_DIR})
 
 set(DOMFRONT_SOURCES
     src/main.cc 
@@ -49,6 +60,7 @@ target_enable_linter(domfront)
 target_include_directories(domfront PUBLIC include)
 target_compile_features(domfront PUBLIC cxx_std_20)
 target_link_libraries(domfront ${llvm_libs})
+target_link_libraries(domfront bison_parser)
 enable_warnings(domfront)
 
 option(BUILD_DOCS OFF)
