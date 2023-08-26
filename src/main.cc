@@ -29,7 +29,8 @@ static cl::opt<std::string> DumpCFG("dump-cfg",
                                     cl::cat(Options));
 static cl::opt<bool> PrintDominatorsOpt("print-dominators",
                                         cl::desc("Print Dominators"),
-                                        cl::cat(Options), cl::init(false));
+                                        cl::cat(Options), cl::init(false),
+                                        cl::Hidden);
 
 static cl::opt<bool>
     GenerateCFG("generate-cfg",
