@@ -68,6 +68,12 @@ public:
   using BaseTy::front;
   using BaseTy::operator[];
 
+  GraphTy() = default;
+  GraphTy(const GraphTy &) = delete;
+  GraphTy &operator=(const GraphTy &) = delete;
+  GraphTy(GraphTy &&) = default;
+  GraphTy &operator=(GraphTy &&) = default;
+
   NodeTy *GetOrInsertNode(typename NodeTy::ValueTy Val) {
     auto Found = llvm::find_if(
         *this, [Val](const NodeTy &Node) { return Node.Val == Val; });
