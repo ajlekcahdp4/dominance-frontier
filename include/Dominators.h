@@ -62,9 +62,9 @@ struct DJNode final
 
   void dumpChildrenEdges(std::ostream &OS) const {
     for (const auto &Child : *this) {
-      std::string_view Color = Child.second ? "black" : "red";
-      OS << "vert_" << Val << " -> vert_" << Child.first->Val << " [color=\""
-         << Color
+      std::string_view Style = Child.second ? "solid" : "dotted";
+      OS << "vert_" << Val << " -> vert_" << Child.first->Val << " [style=\""
+         << Style
          << "\"]"
             ";\n";
     }
