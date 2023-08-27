@@ -70,7 +70,7 @@ void PrintDominators(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
 
 void PrintIDom(const std::map<const Node *, const Node *> M, std::ostream &OS) {
   for (auto [Nd, Dom] : M)
-    OS << Nd->Val << ": " << Dom->Val << "\n";
+    OS << Nd->Val << ": " << (Dom ? std::to_string(Dom->Val) : "-") << "\n";
 }
 
 GraphTy<Node> parse_cfg() {
