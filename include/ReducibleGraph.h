@@ -17,6 +17,8 @@
 #include <random>
 #include <set>
 #include <string_view>
+#include <ranges>
+
 
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
@@ -44,7 +46,7 @@ struct Node final : private std::vector<Node *> {
   using typename vector::value_type;
 
   void adoptChild(Node *Child) {
-    assert(std::find(begin(), end(), Child) == end() &&
+    assert(std::ranges::find(*this, Child) == end() &&
            "Attempt to duplicate child.");
     push_back(Child);
     Child->addParent(this);
@@ -53,7 +55,7 @@ struct Node final : private std::vector<Node *> {
   void addParent(Node *Parent) { Parents.insert(Parent); }
 
   void abandonChild(Node *Child) {
-    assert(std::find(begin(), end(), Child) != end() &&
+    assert(std::ranges::find(*this, Child) != end() &&
            "Attempt to remove non-existent child.");
     erase(std::remove(begin(), end(), Child), end());
     Child->removeParent(this);
@@ -104,8 +106,7 @@ public:
   GraphTy &operator=(GraphTy &&) = default;
 
   NodeTy *getOrInsertNode(ValueTy Val) {
-    auto Found = std::find_if(
-        begin(), end(), [Val](const NodeTy &Node) { return Node.Val == Val; });
+    auto Found = std::ranges::find_if(*this, [Val](const NodeTy &Node) { return Node.Val == Val; });
     if (Found == end()) {
       BaseTy::emplace_back(Val);
       return &back();
@@ -115,7 +116,7 @@ public:
 
   unsigned getIndex(ValueTy Val) const {
     auto Found =
-        std::find_if(begin(), end(), [Val](const NodeTy &Nd) { return Nd.Val == Val; });
+        std::ranges::find_if(*this, [Val](const NodeTy &Nd) { return Nd.Val == Val; });
     assert(Found != end() &&
            "Cannot found vertex for which index for requested.");
     return std::distance(begin(), Found);
@@ -181,8 +182,10 @@ class ReducibleGraphBuilder final {
     case 2: {
       switch (getUniformRandom(0, 2)) {
       case 0: {
-        srd::for_each(Nd->begin(), Nd->end(), [New](Node *Child) { New->adoptChild(Child); });
-        std::for_each(Nd->begin(), Nd->end(), [Nd](Node *Child) { Nd->abandonChild(Child); });
+        for (auto &&Child : *Nd) {
+					New->adoptChild(Child);
+					Nd->abandonChild(Child);
+				}	
         Nd->adoptChild(New);
         break;
       }
@@ -194,10 +197,11 @@ class ReducibleGraphBuilder final {
         break;
       }
       case 2: {
-
-        std::for_each(Nd->begin(), Nd->end(), [New](Node *Child) { New->adoptChild(Child); });
-        std::for_each(Nd->begin(), Nd->end(), [Nd](Node *Child) { Nd->abandonChild(Child); });
-        Nd->adoptChild(New);
+        for (auto &&Child : *Nd) {
+					New->adoptChild(Child);
+					Nd->abandonChild(Child);
+				}
+				Nd->adoptChild(New);
         Nd->adoptChild(New->back());
         break;
       }
@@ -217,7 +221,7 @@ public:
   }
 
   void addSelfLoop(Node *Nd) {
-    if (Nd->size() < 2 && std::find(Nd->begin(), Nd->end(), Nd) == Nd->end())
+    if (Nd->size() < 2 && std::ranges::find(*Nd, Nd) == Nd->end())
       Nd->adoptChild(Nd);
   }
   Node *insertNode() {

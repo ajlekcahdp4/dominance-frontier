@@ -112,7 +112,7 @@ GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
   for (auto [Nd, Dom] : IDom) {
     auto IsCurNode = [Nd](const auto &Pair) { return Pair.second == Nd; };
     auto *TreeNode = T.getOrInsertNode(Nd->Val);
-    auto Found = std::find_if(IDom.begin(), IDom.end(), IsCurNode);
+    auto Found = std::ranges::find_if(IDom, IsCurNode);
     while (Found != IDom.end()) {
       if (Found->first->Val != G.getEntryNodeVal())
         TreeNode->push_back(T.getOrInsertNode(Found->first->Val));
@@ -136,7 +136,7 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
     if (Nd.Parents.size() > 1 && Nd.Val != G.getEntryNodeVal())
       for (auto *Parent : Nd.Parents) {
         auto &Vec = *DJ.getOrInsertNode(Parent->Val);
-        if (std::find_if(Vec.begin(), Vec.end(), [&Nd, &DJ](const auto &Pair) {
+        if (std::ranges::find_if(Vec, [&Nd, &DJ](const auto &Pair) {
               return Pair.first == DJ.getOrInsertNode(Nd.Val);
             }) == Vec.end())
           DJ.getOrInsertNode(Parent->Val)

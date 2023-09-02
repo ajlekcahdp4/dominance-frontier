@@ -17,7 +17,7 @@ template <typename Cont>
 Cont OrderedIntersection(const Cont &First, const Cont &Second) {
   Cont Res;
   for (auto &&Entry : First)
-    if (std::find(Second.begin(), Second.end(), Entry) != Second.end())
+    if (std::ranges::find(Second, Entry) != Second.end())
       Res.push_back(Entry);
   return Res;
 }
@@ -35,7 +35,7 @@ inline auto first_match(const ContTy &Cont1, const ContTy &Cont2)
   auto FirstIt = Cont1.cbegin();
   auto FirstEnd = Cont1.cend();
   while (FirstIt != FirstEnd) {
-    auto FoundIt = std::find(Cont2.begin(), Cont2.end(), *FirstIt);
+    auto FoundIt = std::ranges::find(Cont2, *FirstIt);
     if (FoundIt != Cont2.cend())
       break;
     ++FirstIt;

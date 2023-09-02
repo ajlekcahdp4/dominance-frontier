@@ -45,15 +45,15 @@ struct DJNode final
   using typename vector::value_type;
 
   bool isBastardOf(const DJNode *Parent) const {
-    auto Found = std::find_if(
-        Parent->begin(), Parent->end(), [this](const auto &Pair) { return Pair.first == this; });
+    auto Found = std::ranges::find_if(
+        *Parent, [this](const auto &Pair) { return Pair.first == this; });
     if (Found == Parent->end())
       return false;
     return !Found->second;
   }
 
   void addBastard(DJNode *Child) {
-    assert(std::find_if(begin(), end(),
+    assert(std::ranges::find_if(*this,
                         [Child](const auto &Pair) {
                           return Pair.first == Child;
                         }) == end() &&
@@ -62,7 +62,7 @@ struct DJNode final
   }
 
   void adoptChild(DJNode *Child) {
-    assert(std::find_if(begin(), end(),
+    assert(std::ranges::find_if(*this,
                         [Child](const auto &Pair) {
                           return Pair.first == Child;
                         }) == end() &&
@@ -95,7 +95,7 @@ std::vector<const NodeTy *> pathUp(const NodeTy *From) {
   const auto *CurrNode = From;
   Path.push_back(CurrNode);
   while (true) {
-    auto Found = std::find_if(CurrNode->Parents.begin(), CurrNode->Parents.end(), [CurrNode](const auto *P) {
+    auto Found = std::ranges::find_if(CurrNode->Parents, [CurrNode](const auto *P) {
       return !CurrNode->isBastardOf(P); // A.K.A. trueborn
     });
     if (Found == CurrNode->Parents.end())
