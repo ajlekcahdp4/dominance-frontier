@@ -74,7 +74,7 @@ public:
   GraphTy(GraphTy &&) = default;
   GraphTy &operator=(GraphTy &&) = default;
 
-  NodeTy *GetOrInsertNode(typename NodeTy::ValueTy Val) {
+  NodeTy *getOrInsertNode(typename NodeTy::ValueTy Val) {
     auto Found = llvm::find_if(
         *this, [Val](const NodeTy &Node) { return Node.Val == Val; });
     if (Found == end()) {

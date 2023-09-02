@@ -74,10 +74,13 @@ void PrintIDom(const std::map<const Node *, const Node *> M, std::ostream &OS) {
 }
 
 GraphTy<Node> parse_cfg() {
+  unsigned N = 0;
+  std::cin >> N;
+  assert(std::cin.good());
   std::noskipws(std::cin);
   std::string Input{std::istreambuf_iterator<char>{std::cin},
                     std::istreambuf_iterator<char>{}};
-  Driver DRV{};
+  Driver DRV{N};
   std::istringstream ISS{Input};
   DRV.switchInputStream(&ISS);
   DRV.parse();
