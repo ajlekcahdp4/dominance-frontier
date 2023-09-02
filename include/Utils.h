@@ -10,6 +10,7 @@
 #include <vector>
 
 namespace lqvm {
+namespace utils {
 template <typename Cont>
 Cont OrderedIntersection(const Cont &First, const Cont &Second) {
   Cont Res;
@@ -25,4 +26,5 @@ inline size_t GetIndexIn(const Node *Nd, Range Order) {
   assert(Found != Order.end());
   return std::distance(Order.begin(), Found);
 }
+} // namespace utils
 } // namespace lqvm
