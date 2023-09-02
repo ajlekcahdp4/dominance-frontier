@@ -11,6 +11,7 @@
 #include <llvm/ADT/PostOrderIterator.h>
 #include <llvm/ADT/STLExtras.h>
 
+#include <ranges>
 #include <string_view>
 
 namespace lqvm {
@@ -33,7 +34,7 @@ void ComputeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
       if (M.contains(Parent))
         Doms = utils::OrderedIntersection(Doms, M.at(Parent));
     Doms.push_back(&Nd);
-    if (llvm::find(G, Nd) == G.begin())
+    if (Nd.Val != G.getEntryNodeVal())
       M[&Nd] = std::move(Doms);
   }
 }
@@ -86,7 +87,7 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
       }
       return nullptr;
     };
-    for (auto *CNode : llvm::drop_begin(RPO)) {
+    for (auto *CNode : utils::drop_begin(RPO)) {
       const auto *NewIdom = PickParent(CNode);
       for (auto *Parent : CNode->Parents) {
         if (Parent != NewIdom && IDom[Parent]) {
@@ -113,7 +114,7 @@ GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
     auto *TreeNode = T.getOrInsertNode(Nd->Val);
     auto Found = std::find_if(IDom.begin(), IDom.end(), IsCurNode);
     while (Found != IDom.end()) {
-      if (llvm::find(G, *Found->first) != G.begin())
+      if (Found->first->Val != G.getEntryNodeVal())
         TreeNode->push_back(T.getOrInsertNode(Found->first->Val));
       Found = std::find_if(std::next(Found), IDom.end(), IsCurNode);
     }
@@ -128,11 +129,11 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
   for (auto &&Nd : G)
     DJ.emplace_back(Nd.Val);
   for (auto [Nd, Dom] : IDom)
-    if (llvm::find(G, *Nd) != G.begin())
+    if (Nd->Val != G.getEntryNodeVal())
       DJ.getOrInsertNode(Dom->Val)->adoptChild(DJ.getOrInsertNode(Nd->Val));
   assert(DJ.size() == G.size());
   for (auto &Nd : G) {
-    if (Nd.Parents.size() > 1 && llvm::find(G, Nd) != G.begin())
+    if (Nd.Parents.size() > 1 && Nd.Val != G.getEntryNodeVal())
       for (auto *Parent : Nd.Parents) {
         auto &Vec = *DJ.getOrInsertNode(Parent->Val);
         if (std::find_if(Vec.begin(), Vec.end(), [&Nd, &DJ](const auto &Pair) {
@@ -150,19 +151,20 @@ GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
   GraphTy<Node> DF;
   for (auto &&Nd : G)
     DF.getOrInsertNode(Nd.Val);
-  auto BastardOwners = llvm::make_filter_range(DJ, [](const DJNode &Nd) {
+  auto HasBastard = [](const DJNode &Nd) {
     return std::any_of(Nd.begin(), Nd.end(),
                        [](const auto &Pair) { return !Pair.second; });
-  });
+  };
+  auto BastardOwners = DJ | std::views::filter(HasBastard);
   for (auto &&BO : BastardOwners) {
     for (auto [Child, IsTrueBorn] : BO) {
       if (!IsTrueBorn) {
         auto NCAPath = findPathToNCA(&BO, Child);
-        for (const auto *Nd : llvm::drop_end(NCAPath)) {
+        for (const auto *Nd : utils::drop_end(NCAPath)) {
           // check duplicate
           auto *DFNd = DF.getOrInsertNode(Nd->Val);
           auto *DFChild = DF.getOrInsertNode(Child->Val);
-          if (!llvm::is_contained(*DFNd, DFChild))
+          if (!utils::is_contained(*DFNd, DFChild))
             DFNd->adoptChild(DFChild);
         }
       }
@@ -174,10 +176,11 @@ GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
 GraphTy<Node> BuildIDF(const GraphTy<Node> &G) {
   auto IDF = BuildDF(G);
   for (auto &&CurrNode : IDF) {
-    auto BFS = llvm::drop_begin(llvm::breadth_first(&CurrNode));
-    for (auto *Des : BFS) {
-      if (!llvm::is_contained(CurrNode, Des))
-        CurrNode.adoptChild(Des);
+    auto BFS = llvm::breadth_first(&CurrNode);
+    for (auto DesIt = std::next(BFS.begin()), End = BFS.end(); DesIt != End;
+         ++DesIt) {
+      if (!utils::is_contained(CurrNode, *DesIt))
+        CurrNode.adoptChild(*DesIt);
     }
   }
   return IDF;

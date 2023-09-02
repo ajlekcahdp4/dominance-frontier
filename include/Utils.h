@@ -9,8 +9,8 @@
 #include <llvm/ADT/STLExtras.h>
 
 #include <algorithm>
+#include <ranges>
 #include <vector>
-
 namespace lqvm {
 namespace utils {
 template <typename Cont>
@@ -40,8 +40,21 @@ inline auto first_match(const ContTy &Cont1, const ContTy &Cont2)
       break;
     ++FirstIt;
   }
-
   return FirstIt;
+}
+
+template <std::ranges::forward_range RangeTy>
+auto drop_begin(const RangeTy &R) {
+  return R;
+}
+
+template <std::ranges::forward_range RangeTy> auto drop_end(const RangeTy &R) {
+  return R | std::views::take(std::ranges::size(R) - 1);
+}
+
+template <std::ranges::forward_range RangeTy>
+bool is_contained(RangeTy R, const typename RangeTy::value_type &Val) {
+  return std::ranges::find(R, Val) != R.end();
 }
 
 } // namespace utils

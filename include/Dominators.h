@@ -21,12 +21,28 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G);
 GraphTy<Node> BuildDomTree(const GraphTy<Node> &G);
 
 struct DJNode final
-    : std::vector<std::pair<DJNode *, bool>> { // bool = true for trueborn
-                                               // children
+    : private std::vector<std::pair<DJNode *, bool>> { // bool = true for
+                                                       // trueborn
+                                                       // children
   std::set<DJNode *> Parents;
   using ValueTy = unsigned;
   ValueTy Val;
   DJNode(ValueTy Value) : vector(), Val(Value) {}
+
+  using vector::back;
+  using vector::begin;
+  using vector::cbegin;
+  using vector::cend;
+  using vector::end;
+  using vector::front;
+  using vector::push_back;
+  using vector::operator[];
+  using vector::erase;
+  using vector::size;
+
+  using typename vector::const_iterator;
+  using typename vector::iterator;
+  using typename vector::value_type;
 
   bool isBastardOf(const DJNode *Parent) const {
     auto Found = llvm::find_if(

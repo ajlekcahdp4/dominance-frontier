@@ -21,11 +21,27 @@
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
 
-struct Node final : std::vector<Node *> {
+struct Node final : private std::vector<Node *> {
   std::set<Node *> Parents;
   using ValueTy = unsigned;
   ValueTy Val;
   Node(ValueTy Value) : vector(), Val(Value) {}
+  Node() : Val{} {}
+
+  using vector::back;
+  using vector::begin;
+  using vector::cbegin;
+  using vector::cend;
+  using vector::end;
+  using vector::front;
+  using vector::push_back;
+  using vector::operator[];
+  using vector::erase;
+  using vector::size;
+
+  using typename vector::const_iterator;
+  using typename vector::iterator;
+  using typename vector::value_type;
 
   void adoptChild(Node *Child) {
     assert(std::find(begin(), end(), Child) == end() &&
@@ -57,16 +73,29 @@ struct Node final : std::vector<Node *> {
   void removeParent(Node *Parent) { Parents.erase(Parent); }
 };
 
-template <typename NodeTy> struct GraphTy final : public std::vector<NodeTy> {
+template <typename NodeTy> struct GraphTy final : private std::vector<NodeTy> {
 private:
   using BaseTy = std::vector<NodeTy>;
 
 public:
   using BaseTy::back;
   using BaseTy::begin;
+  using BaseTy::cbegin;
+  using BaseTy::cend;
+  using BaseTy::emplace_back;
   using BaseTy::end;
   using BaseTy::front;
+  using BaseTy::push_back;
   using BaseTy::operator[];
+  using BaseTy::erase;
+  using BaseTy::reserve;
+  using BaseTy::size;
+
+  using typename BaseTy::const_iterator;
+  using typename BaseTy::iterator;
+  using typename BaseTy::value_type;
+
+  using ValueTy = typename NodeTy::ValueTy;
 
   GraphTy() = default;
   GraphTy(const GraphTy &) = delete;
@@ -74,7 +103,7 @@ public:
   GraphTy(GraphTy &&) = default;
   GraphTy &operator=(GraphTy &&) = default;
 
-  NodeTy *getOrInsertNode(typename NodeTy::ValueTy Val) {
+  NodeTy *getOrInsertNode(ValueTy Val) {
     auto Found = llvm::find_if(
         *this, [Val](const NodeTy &Node) { return Node.Val == Val; });
     if (Found == end()) {
@@ -84,13 +113,15 @@ public:
     return std::addressof(*Found);
   }
 
-  unsigned getIndex(typename NodeTy::ValueTy Val) const {
+  unsigned getIndex(ValueTy Val) const {
     auto Found =
         llvm::find_if(*this, [Val](const NodeTy &Nd) { return Nd.Val == Val; });
     assert(Found != end() &&
            "Cannot found vertex for which index for requested.");
     return std::distance(begin(), Found);
   }
+
+  ValueTy getEntryNodeVal() const { return 0; }
 
   void dumpDot(std::ostream &OS, std::string_view Title) const;
 };
@@ -209,7 +240,7 @@ public:
       };
     }
     for (auto &&Nd : Graph) {
-      if (llvm::is_contained(Nd, &Nd))
+      if (utils::is_contained(Nd, &Nd))
         Nd.abandonChild(&Nd);
     }
   }
