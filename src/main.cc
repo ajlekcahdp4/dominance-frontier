@@ -26,12 +26,12 @@ static cl::opt<bool> PrintDominators("print-dominators",
                                      cl::desc("Print Dominators"),
                                      cl::cat(Options), cl::init(false));
 
-static void Print(const NodetoDominatorsTy &Dominators) {
+static void Print(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
   for (auto &&[NodePtr, Doms] : Dominators) {
-    std::cout << NodePtr->Val << ": ";
+    OS << NodePtr->Val << ": ";
     for (auto *Dom : Doms)
-      std::cout << Dom->Val << ", ";
-    std::cout << std::endl;
+      OS << Dom->Val << ", ";
+    OS << std::endl;
   }
 }
 
@@ -45,9 +45,9 @@ int main(int Argc, char **Argv) {
   if (DumpCFG)
     G.dumpDot(std::cout);
   if (PrintDominators)
-    Print(ComputeDominators(G));
+    Print(ComputeDominators(G), std::cout);
   // std::cout << "Immediate dominators:\n";
-  // auto IDom = ComputeIDom(G);
-  // for (auto [Nd, Dom] : IDom)
-  //   std::cout << Nd->Val << ": " << Dom->Val << "\n";
+  auto IDom = ComputeIDom(G);
+  for (auto [Nd, Dom] : IDom)
+    std::cerr << Nd->Val << ": " << Dom->Val << "\n";
 }
