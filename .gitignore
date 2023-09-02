@@ -2,7 +2,7 @@
 .cache/
 
 # Nested build directories 
-*/build
+**/build
 
 # Skip VSCode configuration files
 .vscode/
