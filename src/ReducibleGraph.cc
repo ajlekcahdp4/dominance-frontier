@@ -6,23 +6,21 @@
 // ----------------------------------------------------------------------------
 
 #include "ReducibleGraph.h"
-
+#include <algorithm>
 namespace lqvm {
 
-void ReducibleGraphBuilder::dumpDot(std::ostream &OS) const {
-
+void GraphTy::dumpDot(std::ostream &OS) const {
   OS << "digraph cluster_1 {\n";
-
-  auto DeclareNodesAndEdges = [&OS](const GraphTy::node_type &Nd) {
-    OS << "vert_" << Nd.value.key;
+  auto DeclareNodesAndEdges = [&OS](const Node &Nd) {
+    OS << "vert_" << Nd.Val;
     OS << "\t\t"
-       << "[shape=circle, label=\"" << Nd.value.key << "\"];\n";
-    for (auto &&Child : Nd) {
-      OS << "vert_" << Nd.value.key << " -> "
-         << "vert_" << Child.key << ";\n";
+       << "[shape=circle, label=\"" << Nd.Val << "\"];\n";
+    for (auto *Child : Nd) {
+      OS << "vert_" << Nd.Val << " -> "
+         << "vert_" << Child->Val << ";\n";
     }
   };
-  graphs::breadth_first_search(Graph, 0, DeclareNodesAndEdges);
+  std::for_each(begin(), end(), DeclareNodesAndEdges);
   OS << "\t}\n";
 }
 } // namespace lqvm
