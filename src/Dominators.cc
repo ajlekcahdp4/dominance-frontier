@@ -129,32 +129,35 @@ void DumpDomTree(const GraphTy &DomTree, std::ostream &OS) {
   OS << "}";
 }
 
-NodetoDominatorsTy ComputeDJ(const std::map<const Node *, const Node *> &IDom,
-                             const GraphTy &G) {
-  NodetoDominatorsTy DJ; // Node to parents
+GraphTy ComputeDJ(const GraphTy &G) {
+  auto IDom = ComputeIDom(G);
+  GraphTy DJ;
+  DJ.reserve(G.size());
+  for (auto &&Nd : G)
+    DJ.push_back(Node(Nd.Val));
   for (auto [Nd, Dom] : IDom)
-    DJ[Nd] = {Dom};
-  assert(DJ.size() == IDom.size());
+    if (Nd->Val != 0)
+      DJ[Dom->Val].push_back(const_cast<Node *>(Nd));
+  assert(DJ.size() == G.size());
   for (auto &Nd : G) {
     if (Nd.Parents.size() > 1)
       for (auto *Parent : Nd.Parents) {
-        auto &Vec = DJ[&Nd];
-        if (std::find(Vec.begin(), Vec.end(), Parent) == Vec.end())
-          DJ[&Nd].push_back(Parent);
+        auto &Vec = DJ[Parent->Val];
+        if (std::find(Vec.begin(), Vec.end(), &Nd) == Vec.end())
+          DJ[Parent->Val].push_back(const_cast<Node *>(&Nd));
       }
   }
   return DJ;
 }
 
-void DumpDJ(const NodetoDominatorsTy &DJ, std::ostream &OS) {
+void DumpDJ(const GraphTy &DJ, std::ostream &OS) {
   OS << "digraph  cluster_DJ {\n";
-  for (auto &&[Nd, _] : DJ)
-    OS << "Node_" << Nd->Val << " ["
-       << "shape=circle, label=\"" << Nd->Val << "\"];\n";
-  for (auto &&[Nd, Doms] : DJ)
-    if (Nd->Val != 0)
-      for (auto *Parent : Doms)
-        OS << "Node_" << Parent->Val << " -> Node_" << Nd->Val << ";\n";
+  for (auto &&Nd : DJ)
+    OS << "Node_" << Nd.Val << " ["
+       << "shape=circle, label=\"" << Nd.Val << "\"];\n";
+  for (auto &&Nd : DJ)
+    for (auto *Child : Nd)
+      OS << "Node_" << Nd.Val << " -> Node_" << Child->Val << ";\n";
   OS << "}";
 }
 
