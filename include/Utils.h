@@ -18,4 +18,11 @@ Cont OrderedIntersection(const Cont &First, const Cont &Second) {
       Res.push_back(Entry);
   return Res;
 }
+
+template <typename Range>
+inline size_t GetIndexIn(const Node *Nd, Range Order) {
+  auto Found = std::find(Order.begin(), Order.end(), Nd);
+  assert(Found != Order.end());
+  return std::distance(Order.begin(), Found);
+}
 } // namespace lqvm
