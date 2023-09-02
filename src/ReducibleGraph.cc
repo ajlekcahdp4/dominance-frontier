@@ -8,20 +8,4 @@
 #include "ReducibleGraph.h"
 
 #include <algorithm>
-namespace lqvm {
-void GraphTy::dumpDot(std::ostream &OS) const {
-  OS << "digraph cluster_1 {\n";
-
-  auto DeclareNodesAndEdges = [&OS](const Node &Nd) {
-    OS << "vert_" << Nd.Val;
-    OS << "\t\t"
-       << "[shape=square, label=\"" << Nd.Val << "\"];\n";
-    for (auto *Child : Nd) {
-      OS << "vert_" << Nd.Val << " -> "
-         << "vert_" << Child->Val << ";\n";
-    }
-  };
-  std::for_each(begin(), end(), DeclareNodesAndEdges);
-  OS << "\t}\n";
-}
-} // namespace lqvm
+namespace lqvm {} // namespace lqvm
