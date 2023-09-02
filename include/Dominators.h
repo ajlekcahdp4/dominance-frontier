@@ -17,15 +17,11 @@ NodetoDominatorsTy ComputeDominators(const GraphTy &G);
 
 std::map<const Node *, const Node *> ComputeIDom(const GraphTy &G);
 
-inline void DumpDomTree(const std::map<const Node *, const Node *> &IDom,
-                        std::ostream &OS) {
-  OS << "digraph  cluster_2 {\n";
-  for (auto [Nd, _] : IDom)
-    OS << "Node_" << Nd->Val << " ["
-       << "shape=circle, label=\"" << Nd->Val << "\"];\n";
-  for (auto [Nd, Dom] : IDom)
-    if (Nd->Val != 0)
-      OS << "Node_" << Dom->Val << " -> Node_" << Nd->Val << ";\n";
-  OS << "}";
-}
+NodetoDominatorsTy ComputeDJ(const std::map<const Node *, const Node *> &IDom,
+                             const GraphTy &G);
+
+void DumpDJ(const NodetoDominatorsTy &DJ, std::ostream &OS);
+
+void DumpDomTree(const std::map<const Node *, const Node *> &IDom,
+                 std::ostream &OS);
 } // namespace lqvm

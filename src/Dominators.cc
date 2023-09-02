@@ -22,7 +22,7 @@ size_t ComputeHash(const NodetoDominatorsTy &M) {
 
 void ComputeDominatorsIteration(const GraphTy &G, NodetoDominatorsTy &M) {
   std::vector<const Node *> AllNodesSet;
-  for (auto &Nd : G)
+  for (auto &&Nd : G)
     AllNodesSet.push_back(&Nd);
   for (auto &&Nd : G) {
     std::vector<const Node *> Doms = AllNodesSet;
@@ -98,6 +98,47 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy &G) {
     }
   }
   return IDom;
+}
+
+void DumpDomTree(const std::map<const Node *, const Node *> &IDom,
+                 std::ostream &OS) {
+  OS << "digraph  cluster_2 {\n";
+  for (auto [Nd, _] : IDom)
+    OS << "Node_" << Nd->Val << " ["
+       << "shape=circle, label=\"" << Nd->Val << "\"];\n";
+  for (auto [Nd, Dom] : IDom)
+    if (Nd->Val != 0)
+      OS << "Node_" << Dom->Val << " -> Node_" << Nd->Val << ";\n";
+  OS << "}";
+}
+
+NodetoDominatorsTy ComputeDJ(const std::map<const Node *, const Node *> &IDom,
+                             const GraphTy &G) {
+  NodetoDominatorsTy DJ; // Node to parents
+  for (auto [Nd, Dom] : IDom)
+    DJ[Nd] = {Dom};
+  assert(DJ.size() == IDom.size());
+  for (auto &Nd : G) {
+    if (Nd.Parents.size() > 1)
+      for (auto *Parent : Nd.Parents) {
+        auto &Vec = DJ[&Nd];
+        if (std::find(Vec.begin(), Vec.end(), Parent) == Vec.end())
+          DJ[&Nd].push_back(Parent);
+      }
+  }
+  return DJ;
+}
+
+void DumpDJ(const NodetoDominatorsTy &DJ, std::ostream &OS) {
+  OS << "digraph  cluster_DJ {\n";
+  for (auto &&[Nd, _] : DJ)
+    OS << "Node_" << Nd->Val << " ["
+       << "shape=circle, label=\"" << Nd->Val << "\"];\n";
+  for (auto &&[Nd, Doms] : DJ)
+    if (Nd->Val != 0)
+      for (auto *Parent : Doms)
+        OS << "Node_" << Parent->Val << " -> Node_" << Nd->Val << ";\n";
+  OS << "}";
 }
 
 } // namespace lqvm
