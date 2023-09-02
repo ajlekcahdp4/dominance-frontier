@@ -1,0 +1,8 @@
+# Clangd language server cache
+.cache/
+
+# Nested build directories 
+*/build
+
+# Skip VSCode configuration files
+.vscode/
