@@ -33,7 +33,7 @@ void ComputeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
       if (M.contains(Parent))
         Doms = utils::OrderedIntersection(Doms, M.at(Parent));
     Doms.push_back(&Nd);
-    if (Nd.Val != 0) // Start Node
+    if (llvm::find(G, Nd) == G.begin())
       M[&Nd] = std::move(Doms);
   }
 }
@@ -112,7 +112,7 @@ GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
     auto *TreeNode = T.GetOrInsertNode(Nd->Val);
     auto Found = std::find_if(IDom.begin(), IDom.end(), IsCurNode);
     while (Found != IDom.end()) {
-      if (Found->first->Val != 0)
+      if (llvm::find(G, *Found->first) != G.begin())
         TreeNode->push_back(T.GetOrInsertNode(Found->first->Val));
       Found = std::find_if(std::next(Found), IDom.end(), IsCurNode);
     }
@@ -127,17 +127,18 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
   for (auto &&Nd : G)
     DJ.emplace_back(Nd.Val);
   for (auto [Nd, Dom] : IDom)
-    if (Nd->Val != 0)
-      DJ[Dom->Val].adoptChild(DJ.GetOrInsertNode(Nd->Val));
+    if (llvm::find(G, *Nd) != G.begin())
+      DJ.GetOrInsertNode(Dom->Val)->adoptChild(DJ.GetOrInsertNode(Nd->Val));
   assert(DJ.size() == G.size());
   for (auto &Nd : G) {
-    if (Nd.Parents.size() > 1 && Nd.Val != 0)
+    if (Nd.Parents.size() > 1 && llvm::find(G, Nd) != G.begin())
       for (auto *Parent : Nd.Parents) {
-        auto &Vec = DJ[Parent->Val];
+        auto &Vec = *DJ.GetOrInsertNode(Parent->Val);
         if (std::find_if(Vec.begin(), Vec.end(), [&Nd, &DJ](const auto &Pair) {
               return Pair.first == DJ.GetOrInsertNode(Nd.Val);
             }) == Vec.end())
-          DJ[Parent->Val].addBastard(DJ.GetOrInsertNode(Nd.Val));
+          DJ.GetOrInsertNode(Parent->Val)
+              ->addBastard(DJ.GetOrInsertNode(Nd.Val));
       }
   }
   return DJ;
