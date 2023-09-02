@@ -75,14 +75,14 @@ all: graph { Driver.G = std::move($1); }
 
 graph: graph edge {
     $$ = std::move($1);
-    auto *From = $$.GetOrInsertNode($2.first);
-    auto *To = $$.GetOrInsertNode($2.second);
+    auto *From = $$.getOrInsertNode($2.first);
+    auto *To = $$.getOrInsertNode($2.second);
     From->adoptChild(To);
   }
   | %empty {
-      $$ = lqvm::GraphTy<Node>();
-      $$.reserve(10000);
-    }
+    $$ = lqvm::GraphTy<Node>();
+    $$.reserve(Driver.MaxVert);
+  }
 
 edge: UNSIGNED LINE UNSIGNED { $$ = std::make_pair($1, $3 ); }
 

@@ -23,7 +23,10 @@ domfront options:
   --dump-dom-tree=<filename> - Dump Dom Tree to dot file
   --dump-idf=<filename>      - Dump IDF graph to dot file
   --gen-iterations=<ulong>   - Iteration number for CFG generation
-  --print-dominators         - Print Dominators
+  --generate-cfg             - Forces to generate CFG, not take it as an input
   --print-idom               - Print Immediate Dominators
   --seed=<ulong>             - Random seed
 ```
+
+## Examples
+To explore examples of input CFG and output see [examples](./examples/)

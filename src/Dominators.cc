@@ -100,6 +100,7 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
       }
     }
   }
+  IDom[&G.front()] = nullptr;
   return IDom;
 }
 
@@ -109,11 +110,11 @@ GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
   T.reserve(G.size());
   for (auto [Nd, Dom] : IDom) {
     auto IsCurNode = [Nd](const auto &Pair) { return Pair.second == Nd; };
-    auto *TreeNode = T.GetOrInsertNode(Nd->Val);
+    auto *TreeNode = T.getOrInsertNode(Nd->Val);
     auto Found = std::find_if(IDom.begin(), IDom.end(), IsCurNode);
     while (Found != IDom.end()) {
       if (llvm::find(G, *Found->first) != G.begin())
-        TreeNode->push_back(T.GetOrInsertNode(Found->first->Val));
+        TreeNode->push_back(T.getOrInsertNode(Found->first->Val));
       Found = std::find_if(std::next(Found), IDom.end(), IsCurNode);
     }
   }
@@ -128,17 +129,17 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
     DJ.emplace_back(Nd.Val);
   for (auto [Nd, Dom] : IDom)
     if (llvm::find(G, *Nd) != G.begin())
-      DJ.GetOrInsertNode(Dom->Val)->adoptChild(DJ.GetOrInsertNode(Nd->Val));
+      DJ.getOrInsertNode(Dom->Val)->adoptChild(DJ.getOrInsertNode(Nd->Val));
   assert(DJ.size() == G.size());
   for (auto &Nd : G) {
     if (Nd.Parents.size() > 1 && llvm::find(G, Nd) != G.begin())
       for (auto *Parent : Nd.Parents) {
-        auto &Vec = *DJ.GetOrInsertNode(Parent->Val);
+        auto &Vec = *DJ.getOrInsertNode(Parent->Val);
         if (std::find_if(Vec.begin(), Vec.end(), [&Nd, &DJ](const auto &Pair) {
-              return Pair.first == DJ.GetOrInsertNode(Nd.Val);
+              return Pair.first == DJ.getOrInsertNode(Nd.Val);
             }) == Vec.end())
-          DJ.GetOrInsertNode(Parent->Val)
-              ->addBastard(DJ.GetOrInsertNode(Nd.Val));
+          DJ.getOrInsertNode(Parent->Val)
+              ->addBastard(DJ.getOrInsertNode(Nd.Val));
       }
   }
   return DJ;
@@ -148,7 +149,7 @@ GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
   auto DJ = ComputeDJ(G);
   GraphTy<Node> DF;
   for (auto &&Nd : G)
-    DF.GetOrInsertNode(Nd.Val);
+    DF.getOrInsertNode(Nd.Val);
   auto BastardOwners = llvm::make_filter_range(DJ, [](const DJNode &Nd) {
     return std::any_of(Nd.begin(), Nd.end(),
                        [](const auto &Pair) { return !Pair.second; });
@@ -159,8 +160,8 @@ GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
         auto NCAPath = findPathToNCA(&BO, Child);
         for (const auto *Nd : llvm::drop_end(NCAPath)) {
           // check duplicate
-          auto *DFNd = DF.GetOrInsertNode(Nd->Val);
-          auto *DFChild = DF.GetOrInsertNode(Child->Val);
+          auto *DFNd = DF.getOrInsertNode(Nd->Val);
+          auto *DFChild = DF.getOrInsertNode(Child->Val);
           if (!llvm::is_contained(*DFNd, DFChild))
             DFNd->adoptChild(DFChild);
         }
