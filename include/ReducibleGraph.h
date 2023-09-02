@@ -22,7 +22,7 @@ struct Node final : std::vector<Node *> {
   std::set<Node *> Parents;
   using ValueTy = unsigned;
   ValueTy Val;
-  Node(ValueTy Val) : vector(), Val(Val) {}
+  Node(ValueTy Value) : vector(), Val(Value) {}
 
   void adoptChild(Node *Child) {
     assert(std::find(begin(), end(), Child) == end() &&
@@ -137,7 +137,7 @@ public:
 
   void generateImpl() {
     insertNode();
-    for (int I = 0; I < MaxSz; ++I) {
+    for (unsigned I = 0; I < MaxSz; ++I) {
       auto N = getUniformRandom(0, Graph.size() - 1);
       auto Op = getUniformRandom(0, 1);
       switch (Op) {
