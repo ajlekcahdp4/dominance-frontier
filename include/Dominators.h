@@ -10,6 +10,7 @@
 #include "Utils.h"
 
 #include <map>
+#include <string_view>
 #include <vector>
 namespace lqvm {
 using NodetoDominatorsTy = std::map<const Node *, std::vector<const Node *>>;
@@ -54,6 +55,21 @@ struct DJNode final
     Child->addParent(this);
   }
 
+  void dumpSelf(std::ostream &OS) const {
+    OS << "vert_" << Val;
+    OS << "[shape=square, label=\"" << Val << "\"];\n";
+  }
+
+  void dumpChildrenEdges(std::ostream &OS) const {
+    for (const auto &Child : *this) {
+      std::string_view Color = Child.second ? "black" : "red";
+      OS << "vert_" << Val << " -> vert_" << Child.first->Val << " [color=\""
+         << Color
+         << "\"]"
+            ";\n";
+    }
+  }
+
   void addParent(DJNode *Parent) { Parents.insert(Parent); }
 };
 
@@ -87,10 +103,6 @@ std::vector<const NodeTy *> findPathToNCA(const NodeTy *From,
 }
 
 GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G);
-
-void DumpDJ(const GraphTy<DJNode> &DJ, std::ostream &OS);
-
-void DumpDomTree(const GraphTy<Node> &DomTree, std::ostream &OS);
 
 GraphTy<Node> BuildDF(const GraphTy<Node> &G);
 

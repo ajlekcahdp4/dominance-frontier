@@ -87,8 +87,11 @@ int main(int Argc, char **Argv) {
     PrintIDom(ComputeIDom(G), std::cout);
   if (DumpDomTreeOpt.getNumOccurrences()) {
     std::ofstream DotFile(DumpDomTreeOpt);
-    if (DotFile.is_open())
-      DumpDomTree(BuildDomTree(G), DotFile);
+    if (DotFile.is_open()) {
+      auto DomTree = BuildDomTree(G);
+      DomTree.dumpDot(DotFile, "Dom Tree");
+    }
+
     else {
       std::cerr << "Unable to open file";
       return EXIT_FAILURE;
@@ -96,9 +99,10 @@ int main(int Argc, char **Argv) {
   }
   if (DumpDJOpt.getNumOccurrences()) {
     std::ofstream DotFile(DumpDJOpt);
-    if (DotFile.is_open())
-      DumpDJ(ComputeDJ(G), DotFile);
-    else {
+    if (DotFile.is_open()) {
+      auto DJ = ComputeDJ(G);
+      DJ.dumpDot(DotFile, "DJ graph");
+    } else {
       std::cerr << "Unable to open file";
       return EXIT_FAILURE;
     }
