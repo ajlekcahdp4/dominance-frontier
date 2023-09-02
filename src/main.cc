@@ -33,6 +33,9 @@ static cl::opt<bool> PrintDominatorsOpt("print-dominators",
 static cl::opt<bool> PrintIDomOpt("print-idom",
                                   cl::desc("Print Immediate Dominators"),
                                   cl::cat(Options), cl::init(false));
+static cl::opt<std::string>
+    DumpDomTreeOpt("dump-dom-tree", cl::desc("Dump Dom Tree to dot file"),
+                   cl::value_desc("filename"), cl::cat(Options));
 
 void PrintDominators(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
   for (auto &&[NodePtr, Doms] : Dominators) {
@@ -70,4 +73,13 @@ int main(int Argc, char **Argv) {
     PrintDominators(ComputeDominators(G), std::cout);
   if (PrintIDomOpt)
     PrintIDom(ComputeIDom(G), std::cout);
+  if (DumpDomTreeOpt.getNumOccurrences()) {
+    std::ofstream DotFile(DumpDomTreeOpt);
+    if (DotFile.is_open())
+      DumpDomTree(ComputeIDom(G), DotFile);
+    else {
+      std::cerr << "Unable to open file";
+      return EXIT_FAILURE;
+    }
+  }
 }
