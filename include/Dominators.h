@@ -7,10 +7,12 @@
 #pragma once
 
 #include "ReducibleGraph.h"
+#include "Utils.h"
 
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/ADT/SetOperations.h>
+#include <llvm/ADT/SetVector.h>
 
 #include <functional>
 #include <iostream>
@@ -20,31 +22,27 @@
 namespace lqvm {
 
 using NodetoDominatorsTy =
-    std::unordered_map<const Node *, std::optional<std::set<const Node *>>>;
+    std::unordered_map<const Node *, std::vector<const Node *>>;
 inline size_t ComputeHash(const NodetoDominatorsTy &M) {
   size_t Hash = 0;
   for (auto &&[NodePtr, Doms] : M) {
-    if (Doms.has_value())
-      for (auto *Dom : Doms.value())
-        Hash += std::hash<const Node *>()(Dom);
+    for (auto *Dom : Doms)
+      Hash += std::hash<const Node *>()(Dom);
   }
   return Hash;
 }
 
 inline void ComputeDominatorsIteration(const GraphTy &G,
                                        NodetoDominatorsTy &M) {
-  std::set<const Node *> AllNodesSet;
-  for (auto &Nd : G) {
-    AllNodesSet.insert(&Nd);
-  }
+  std::vector<const Node *> AllNodesSet;
+  for (auto &Nd : G)
+    AllNodesSet.push_back(&Nd);
   for (auto &&Nd : G) {
-    std::set<const Node *> Doms = AllNodesSet;
-    for (auto *Parent : Nd.Parents) {
-      if (M[Parent]) {
-        llvm::set_intersect(Doms, M[Parent].value());
-      }
-    }
-    Doms.insert(&Nd);
+    std::vector<const Node *> Doms = AllNodesSet;
+    for (auto *Parent : Nd.Parents)
+      if (M.contains(Parent))
+        Doms = OrderedIntersection(Doms, M[Parent]);
+    Doms.push_back(&Nd);
     if (!Nd.Parents.empty())
       M[&Nd] = std::move(Doms);
   }
@@ -52,10 +50,7 @@ inline void ComputeDominatorsIteration(const GraphTy &G,
 
 inline NodetoDominatorsTy ComputeDominators(const GraphTy &G) {
   NodetoDominatorsTy NodeToDominators;
-  NodeToDominators[&G.front()] = std::set<const Node *>{&G.front()};
-  for (auto &&Node : llvm::drop_begin(G))
-    NodeToDominators.insert(std::make_pair(&Node, std::nullopt));
-
+  NodeToDominators[&G.front()] = std::vector<const Node *>{&G.front()};
   auto NewHash = ComputeHash(NodeToDominators);
   auto OldHash = NewHash;
   do {
@@ -64,6 +59,15 @@ inline NodetoDominatorsTy ComputeDominators(const GraphTy &G) {
     NewHash = ComputeHash(NodeToDominators);
   } while (NewHash != OldHash);
   return NodeToDominators;
+}
+
+inline std::vector<std::pair<const Node *, const Node *>>
+ComputeIDom(const GraphTy &G) {
+  auto NodeToDoms = ComputeDominators(G);
+  std::vector<std::pair<const Node *, const Node *>> Res;
+  for (auto &&[NodePtr, Doms] : NodeToDoms)
+    Res.emplace_back(NodePtr, *std::prev(Doms.end(), 2));
+  return Res;
 }
 
 } // namespace lqvm
