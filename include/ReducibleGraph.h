@@ -6,10 +6,7 @@
 // ----------------------------------------------------------------------------
 #pragma once
 
-<<<<<<< HEAD
-=======
 #include <llvm/ADT/GraphTraits.h>
-    >>>>>>> 32e402f (re-initial commit)
 #include <llvm/ADT/STLExtras.h>
 
 #include <algorithm>
@@ -18,151 +15,151 @@
 #include <random>
 #include <set>
 
-    // LQVM - Low Quality Virtual Machine
-    namespace lqvm {
+// LQVM - Low Quality Virtual Machine
+namespace lqvm {
 
-  struct Node final : std::vector<Node *> {
-    std::set<Node *> Parents;
-    using ValueTy = unsigned;
-    ValueTy Val;
-    Node(ValueTy Val) : vector(), Val(Val) {}
+struct Node final : std::vector<Node *> {
+  std::set<Node *> Parents;
+  using ValueTy = unsigned;
+  ValueTy Val;
+  Node(ValueTy Val) : vector(), Val(Val) {}
 
-    void adoptChild(Node *Child) {
-      assert(std::find(begin(), end(), Child) == end() &&
-             "Attempt to duplicate child.");
-      push_back(Child);
-      Child->addParent(this);
+  void adoptChild(Node *Child) {
+    assert(std::find(begin(), end(), Child) == end() &&
+           "Attempt to duplicate child.");
+    push_back(Child);
+    Child->addParent(this);
+  }
+
+  void addParent(Node *Parent) { Parents.insert(Parent); }
+
+  void abandonChild(Node *Child) {
+    assert(std::find(begin(), end(), Child) != end() &&
+           "Attempt to remove non-existent child.");
+    llvm::erase_value(*this, Child);
+    Child->removeParent(this);
+  }
+
+  void removeParent(Node *Parent) { Parents.erase(Parent); }
+};
+struct GraphTy : public std::vector<Node> {
+  void dumpDot(std::ostream &OS) const;
+};
+
+class ReducibleGraphBuilder final {
+  GraphTy Graph;
+  unsigned MaxSz;
+  std::mt19937 RandEngine;
+
+  unsigned getUniformRandom(unsigned Lower, unsigned Upper) {
+    std::uniform_int_distribution<decltype(RandEngine)::result_type> Dist(
+        Lower, Upper);
+    return Dist(RandEngine);
+  }
+
+  Node *addNode(Node *Nd) {
+    auto *New = insertNode();
+    auto Size = Nd->size();
+    switch (Size) {
+    case 0: {
+      Nd->adoptChild(New);
+      break;
     }
-
-    void addParent(Node *Parent) { Parents.insert(Parent); }
-
-    void abandonChild(Node *Child) {
-      assert(std::find(begin(), end(), Child) != end() &&
-             "Attempt to remove non-existent child.");
-      llvm::erase_value(*this, Child);
-      Child->removeParent(this);
-    }
-
-    void removeParent(Node *Parent) { Parents.erase(Parent); }
-  };
-  struct GraphTy : public std::vector<Node> {
-    void dumpDot(std::ostream &OS) const;
-  };
-
-  class ReducibleGraphBuilder final {
-    GraphTy Graph;
-    unsigned MaxSz;
-    std::mt19937 RandEngine;
-
-    unsigned getUniformRandom(unsigned Lower, unsigned Upper) {
-      std::uniform_int_distribution<decltype(RandEngine)::result_type> Dist(
-          Lower, Upper);
-      return Dist(RandEngine);
-    }
-
-    Node *addNode(Node *Nd) {
-      auto *New = insertNode();
-      auto Size = Nd->size();
-      switch (Size) {
+    case 1: {
+      switch (getUniformRandom(0, 2)) {
       case 0: {
+        auto *Old = Nd->back();
+        Nd->abandonChild(Old);
+        Nd->adoptChild(New);
+        New->adoptChild(Old);
+        break;
+      }
+      case 1: {
+        New->adoptChild(Nd->back());
+        Nd->adoptChild(New);
+        break;
+      }
+      case 2: {
+        Nd->adoptChild(New);
+        break;
+      }
+      };
+      break;
+    }
+    case 2: {
+      switch (getUniformRandom(0, 2)) {
+      case 0: {
+        llvm::for_each(*Nd, [New](Node *Child) { New->adoptChild(Child); });
+        llvm::for_each(*Nd, [Nd](Node *Child) { Nd->abandonChild(Child); });
         Nd->adoptChild(New);
         break;
       }
       case 1: {
-        switch (getUniformRandom(0, 2)) {
-        case 0: {
-          auto *Old = Nd->back();
-          Nd->abandonChild(Old);
-          Nd->adoptChild(New);
-          New->adoptChild(Old);
-          break;
-        }
-        case 1: {
-          New->adoptChild(Nd->back());
-          Nd->adoptChild(New);
-          break;
-        }
-        case 2: {
-          Nd->adoptChild(New);
-          break;
-        }
-        };
+        auto *Old = Nd->back();
+        Nd->abandonChild(Old);
+        Nd->adoptChild(New);
+        New->adoptChild(Old);
         break;
       }
       case 2: {
-        switch (getUniformRandom(0, 2)) {
-        case 0: {
-          llvm::for_each(*Nd, [New](Node *Child) { New->adoptChild(Child); });
-          llvm::for_each(*Nd, [Nd](Node *Child) { Nd->abandonChild(Child); });
-          Nd->adoptChild(New);
-          break;
-        }
-        case 1: {
-          auto *Old = Nd->back();
-          Nd->abandonChild(Old);
-          Nd->adoptChild(New);
-          New->adoptChild(Old);
-          break;
-        }
-        case 2: {
 
-          llvm::for_each(*Nd, [New](Node *Child) { New->adoptChild(Child); });
-          llvm::for_each(*Nd, [Nd](Node *Child) { Nd->abandonChild(Child); });
-          Nd->adoptChild(New);
-          Nd->adoptChild(New->back());
-          break;
-        }
-        }
+        llvm::for_each(*Nd, [New](Node *Child) { New->adoptChild(Child); });
+        llvm::for_each(*Nd, [Nd](Node *Child) { Nd->abandonChild(Child); });
+        Nd->adoptChild(New);
+        Nd->adoptChild(New->back());
         break;
       }
-      default:
-        assert(0 && "Node can't have more than 2 successors.");
+      }
+      break;
+    }
+    default:
+      assert(0 && "Node can't have more than 2 successors.");
+    };
+    return New;
+  }
+
+public:
+  ReducibleGraphBuilder(unsigned Sz, unsigned long long Seed)
+      : MaxSz(Sz), RandEngine(Seed) {
+    Graph.reserve(MaxSz);
+  }
+
+  void addSelfLoop(Node *Nd) {
+    if (Nd->size() < 2 && std::find(Nd->begin(), Nd->end(), Nd) == Nd->end())
+      Nd->adoptChild(Nd);
+  }
+  Node *insertNode() {
+    Graph.emplace_back(Graph.size());
+    return &Graph.back();
+  }
+
+  void dumpDot(std::ostream &OS) const;
+
+  void generateImpl() {
+    insertNode();
+    for (int I = 0; I < MaxSz; ++I) {
+      auto N = getUniformRandom(0, Graph.size() - 1);
+      auto Op = getUniformRandom(0, 1);
+      switch (Op) {
+      case 0:
+        addNode(&Graph[N]);
+        break;
+      case 1:
+        addSelfLoop(&Graph[N]);
+        break;
       };
-      return New;
     }
+    for (auto &&Nd : Graph) {
+      if (llvm::is_contained(Nd, &Nd))
+        Nd.abandonChild(&Nd);
+    }
+  }
 
-  public:
-    ReducibleGraphBuilder(unsigned Sz, unsigned long long Seed)
-        : MaxSz(Sz), RandEngine(Seed) {
-      Graph.reserve(MaxSz);
-    }
-
-    void addSelfLoop(Node *Nd) {
-      if (Nd->size() < 2 && std::find(Nd->begin(), Nd->end(), Nd) == Nd->end())
-        Nd->adoptChild(Nd);
-    }
-    Node *insertNode() {
-      Graph.emplace_back(Graph.size());
-      return &Graph.back();
-    }
-
-    void dumpDot(std::ostream &OS) const;
-
-    void generateImpl() {
-      insertNode();
-      for (int I = 0; I < MaxSz; ++I) {
-        auto N = getUniformRandom(0, Graph.size() - 1);
-        auto Op = getUniformRandom(0, 1);
-        switch (Op) {
-        case 0:
-          addNode(&Graph[N]);
-          break;
-        case 1:
-          addSelfLoop(&Graph[N]);
-          break;
-        };
-      }
-      for (auto &&Nd : Graph) {
-        if (llvm::is_contained(Nd, &Nd))
-          Nd.abandonChild(&Nd);
-      }
-    }
-
-    GraphTy generate() {
-      generateImpl();
-      return std::move(Graph);
-    }
-  };
+  GraphTy generate() {
+    generateImpl();
+    return std::move(Graph);
+  }
+};
 
 } // namespace lqvm
 
