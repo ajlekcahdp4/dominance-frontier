@@ -80,7 +80,7 @@ GraphTy<Node> parse_cfg() {
   std::istringstream ISS{Input};
   DRV.switchInputStream(&ISS);
   DRV.parse();
-  return DRV.G;
+  return std::move(DRV.G);
 }
 } // namespace lqvm
 
