@@ -44,6 +44,16 @@ struct Node final : std::vector<Node *> {
 };
 struct GraphTy : public std::vector<Node> {
   void dumpDot(std::ostream &OS) const;
+
+  Node *GetOrInsertNode(Node::ValueTy Val) {
+    auto Found = llvm::find_if(
+        *this, [Val](const Node &Node) { return Node.Val == Val; });
+    if (Found == end()) {
+      emplace_back(Val);
+      return &back();
+    }
+    return std::addressof(*Found);
+  }
 };
 
 class ReducibleGraphBuilder final {
