@@ -67,7 +67,6 @@ public:
   using BaseTy::end;
   using BaseTy::front;
   using BaseTy::operator[];
-  void dumpDot(std::ostream &OS) const;
 
   NodeTy *GetOrInsertNode(typename NodeTy::ValueTy Val) {
     auto Found = llvm::find_if(
