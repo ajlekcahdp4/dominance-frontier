@@ -27,6 +27,14 @@ struct DJNode final
   ValueTy Val;
   DJNode(ValueTy Value) : vector(), Val(Value) {}
 
+  bool isBastardOf(const DJNode *Parent) const {
+    auto Found = llvm::find_if(
+        *Parent, [this](const auto &Pair) { return Pair.first == this; });
+    if (Found == Parent->end())
+      return false;
+    return !Found->second;
+  }
+
   void addBastard(DJNode *Child) {
     assert(std::find_if(begin(), end(),
                         [Child](const auto &Pair) {
@@ -49,9 +57,40 @@ struct DJNode final
   void addParent(DJNode *Parent) { Parents.insert(Parent); }
 };
 
+template <typename NodeTy>
+std::vector<const NodeTy *> pathUp(const NodeTy *From) {
+  std::vector<const NodeTy *> Path;
+  const auto *CurrNode = From;
+  Path.push_back(CurrNode);
+  while (true) {
+    auto Found = llvm::find_if(CurrNode->Parents, [CurrNode](const auto *P) {
+      return !CurrNode->isBastardOf(P); // A.K.A. trueborn
+    });
+    if (Found == CurrNode->Parents.end())
+      break;
+    CurrNode = *Found;
+    Path.push_back(CurrNode);
+  }
+  return Path;
+}
+
+template <typename NodeTy>
+std::vector<const NodeTy *> findPathToNCA(const NodeTy *From,
+                                          const NodeTy *To) {
+  auto FromPath = pathUp(From);
+  auto ToPath = pathUp(To);
+  auto MatchIt = utils::first_match(FromPath, ToPath);
+  assert(MatchIt != FromPath.end());
+  std::vector<const NodeTy *> Res;
+  std::copy(FromPath.cbegin(), std::next(MatchIt), std::back_inserter(Res));
+  return Res;
+}
+
 GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G);
 
 void DumpDJ(const GraphTy<DJNode> &DJ, std::ostream &OS);
 
 void DumpDomTree(const GraphTy<Node> &DomTree, std::ostream &OS);
+
+GraphTy<Node> BuildDF(const GraphTy<Node> &G);
 } // namespace lqvm
