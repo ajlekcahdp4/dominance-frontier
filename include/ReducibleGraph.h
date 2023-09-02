@@ -6,6 +6,8 @@
 // ----------------------------------------------------------------------------
 #pragma once
 
+#include "Utils.h"
+
 #include <llvm/ADT/GraphTraits.h>
 #include <llvm/ADT/STLExtras.h>
 

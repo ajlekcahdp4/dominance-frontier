@@ -142,7 +142,7 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
       DJ[Dom->Val].adoptChild(DJ.GetOrInsertNode(Nd->Val));
   assert(DJ.size() == G.size());
   for (auto &Nd : G) {
-    if (Nd.Parents.size() > 1)
+    if (Nd.Parents.size() > 1 && Nd.Val != 0)
       for (auto *Parent : Nd.Parents) {
         auto &Vec = DJ[Parent->Val];
         if (std::find_if(Vec.begin(), Vec.end(), [&Nd, &DJ](const auto &Pair) {
@@ -170,12 +170,30 @@ void DumpDJ(const GraphTy<DJNode> &DJ, std::ostream &OS) {
   OS << "}";
 }
 
-GraphTy<DJNode> BuildDF(const GraphTy<Node> &G) {
+GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
   auto DJ = ComputeDJ(G);
+  GraphTy<Node> DF;
+  for (auto &&Nd : G)
+    DF.GetOrInsertNode(Nd.Val);
   auto BastardOwners = llvm::make_filter_range(DJ, [](const DJNode &Nd) {
     return std::any_of(Nd.begin(), Nd.end(),
                        [](const auto &Pair) { return !Pair.second; });
   });
+  for (auto &&BO : BastardOwners) {
+    for (auto [Child, IsTrueBorn] : BO) {
+      if (!IsTrueBorn) {
+        auto NCAPath = findPathToNCA(&BO, Child);
+        for (const auto *Nd : llvm::drop_end(NCAPath)) {
+          // check duplicate
+          auto *DFNd = DF.GetOrInsertNode(Nd->Val);
+          auto *DFChild = DF.GetOrInsertNode(Child->Val);
+          if (!llvm::is_contained(*DFNd, DFChild))
+            DFNd->adoptChild(DFChild);
+        }
+      }
+    }
+  }
+  return DF;
 }
 
 } // namespace lqvm
