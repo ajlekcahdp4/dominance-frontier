@@ -23,8 +23,9 @@ private:
 
 public:
   GraphTy<Node> G;
+  unsigned MaxVert;
 
-  Driver() : Scan{}, Parser{Scan, *this} {}
+  Driver(unsigned N) : Scan{}, Parser{Scan, *this}, MaxVert{N} {}
   void parse() { Parser.parse(); }
   void switchInputStream(std::istream *Is) { Scan.switch_streams(Is, nullptr); }
 };
