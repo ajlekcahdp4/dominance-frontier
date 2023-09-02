@@ -23,6 +23,8 @@ private:
 
 public:
   GraphTy<Node> G;
+
+  Driver() : Scan{}, Parser{Scan, *this} {}
   void parse() { Parser.parse(); }
   void switchInputStream(std::istream *Is) { Scan.switch_streams(Is, nullptr); }
 };

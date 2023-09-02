@@ -77,9 +77,14 @@ graph: graph edge {
     $$ = std::move($1);
     auto *From = $$.GetOrInsertNode($2.first);
     auto *To = $$.GetOrInsertNode($2.second);
+    std::cout << From->size() << std::endl;
     From->adoptChild(To);
+    std::cout << From->size() << std::endl;
   }
-  | %empty { $$ = lqvm::GraphTy<Node>(); }
+  | %empty {
+      $$ = lqvm::GraphTy<Node>();
+      $$.reserve(10000);
+    }
 
 edge: UNSIGNED LINE UNSIGNED { $$ = std::make_pair($1, $3 ); }
 

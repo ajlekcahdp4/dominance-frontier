@@ -6,13 +6,14 @@
 // ----------------------------------------------------------------------------
 #include "Dominators.h"
 #include "ReducibleGraph.h"
+#include "driver.h"
 
 #include <llvm/Support/CommandLine.h>
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
-
 namespace lqvm {
 using namespace llvm;
 cl::OptionCategory Options("domfront options");
@@ -29,6 +30,11 @@ static cl::opt<std::string> DumpCFG("dump-cfg",
 static cl::opt<bool> PrintDominatorsOpt("print-dominators",
                                         cl::desc("Print Dominators"),
                                         cl::cat(Options), cl::init(false));
+
+static cl::opt<bool>
+    GenerateCFG("generate-cfg",
+                cl::desc("Forces to generate CFG, not take it as an input"),
+                cl::cat(Options), cl::init(false));
 
 static cl::opt<bool> PrintIDomOpt("print-idom",
                                   cl::desc("Print Immediate Dominators"),
@@ -65,13 +71,28 @@ void PrintIDom(const std::map<const Node *, const Node *> M, std::ostream &OS) {
   for (auto [Nd, Dom] : M)
     OS << Nd->Val << ": " << Dom->Val << "\n";
 }
+
+GraphTy<Node> parse_cfg() {
+  std::noskipws(std::cin);
+  std::string Input{std::istreambuf_iterator<char>{std::cin},
+                    std::istreambuf_iterator<char>{}};
+  Driver DRV{};
+  std::istringstream ISS{Input};
+  DRV.switchInputStream(&ISS);
+  DRV.parse();
+  return DRV.G;
+}
 } // namespace lqvm
 
 using namespace lqvm;
 int main(int Argc, char **Argv) {
   cl::ParseCommandLineOptions(Argc, Argv, "");
-  ReducibleGraphBuilder GB(GenIterations, Seed);
-  auto G = GB.generate();
+  GraphTy<Node> G;
+  if (GenerateCFG) {
+    ReducibleGraphBuilder GB(GenIterations, Seed);
+    G = GB.generate();
+  } else
+    G = parse_cfg();
   if (DumpCFG.getNumOccurrences()) {
     std::ofstream DotFile(DumpCFG);
     if (DotFile.is_open())
