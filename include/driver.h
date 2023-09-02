@@ -7,21 +7,23 @@
 
 #pragma once
 
-#if !defined(yyFlexLexerOnce)
-#undef yyFlexLexer
-#define yyFlexLexer graph_FlexLexer
-#include <FlexLexer.h>
-#endif
-
-#undef YY_DECL
-#define YY_DECL lqvm::parser::symbol_type lqvm::scanner::get_next_token()
+#include "ReducibleGraph.h"
+#include "scanner.h"
 
 #include "graph_parser.h"
 
 namespace lqvm {
-class scanner : public yyFlexLexer {
+
+class Driver {
+private:
+  scanner Scan;
+  parser Parser;
+
+  friend class scanner;
+
 public:
-  scanner() {}
-  parser::symbol_type get_next_token();
+  GraphTy<Node> G;
+  void parse() { Parser.parse(); }
+  void switchInputStream(std::istream *Is) { Scan.switch_streams(Is, nullptr); }
 };
 } // namespace lqvm
