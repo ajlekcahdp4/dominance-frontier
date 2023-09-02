@@ -40,16 +40,37 @@ struct Node final : std::vector<Node *> {
     Child->removeParent(this);
   }
 
+  void dumpSelf(std::ostream &OS) const {
+    OS << "vert_" << Val;
+    OS << "[shape=square, label=\"" << Val << "\"];\n";
+  }
+
+  void dumpChildrenEdges(std::ostream &OS) const {
+    for (auto *Child : *this)
+      OS << "vert_" << Val << " -> "
+         << "vert_" << Child->Val << ";\n";
+  }
+
   void removeParent(Node *Parent) { Parents.erase(Parent); }
 };
-struct GraphTy : public std::vector<Node> {
+
+template <typename NodeTy> struct GraphTy final : public std::vector<NodeTy> {
+private:
+  using BaseTy = std::vector<NodeTy>;
+
+public:
+  using BaseTy::back;
+  using BaseTy::begin;
+  using BaseTy::end;
+  using BaseTy::front;
+  using BaseTy::operator[];
   void dumpDot(std::ostream &OS) const;
 
-  Node *GetOrInsertNode(Node::ValueTy Val) {
+  NodeTy *GetOrInsertNode(typename NodeTy::ValueTy Val) {
     auto Found = llvm::find_if(
-        *this, [Val](const Node &Node) { return Node.Val == Val; });
+        *this, [Val](const NodeTy &Node) { return Node.Val == Val; });
     if (Found == end()) {
-      emplace_back(Val);
+      BaseTy::emplace_back(Val);
       return &back();
     }
     return std::addressof(*Found);
@@ -57,7 +78,7 @@ struct GraphTy : public std::vector<Node> {
 };
 
 class ReducibleGraphBuilder final {
-  GraphTy Graph;
+  GraphTy<Node> Graph;
   unsigned MaxSz;
   std::mt19937 RandEngine;
 
@@ -165,11 +186,22 @@ public:
     }
   }
 
-  GraphTy generate() {
+  GraphTy<Node> generate() {
     generateImpl();
     return std::move(Graph);
   }
 };
+
+template <typename NodeTy>
+void GraphTy<NodeTy>::dumpDot(std::ostream &OS) const {
+  OS << "digraph cluster_1 {\n";
+  auto DeclareNodesAndEdges = [&OS](const NodeTy &Nd) {
+    Nd.dumpSelf(OS);
+    Nd.dumpChildrenEdges(OS);
+  };
+  std::for_each(begin(), end(), DeclareNodesAndEdges);
+  OS << "\t}\n";
+}
 
 } // namespace lqvm
 

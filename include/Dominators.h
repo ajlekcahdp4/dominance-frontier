@@ -13,15 +13,45 @@
 #include <vector>
 namespace lqvm {
 using NodetoDominatorsTy = std::map<const Node *, std::vector<const Node *>>;
-NodetoDominatorsTy ComputeDominators(const GraphTy &G);
+NodetoDominatorsTy ComputeDominators(const GraphTy<Node> &G);
 
-std::map<const Node *, const Node *> ComputeIDom(const GraphTy &G);
+std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G);
 
-GraphTy BuildDomTree(const GraphTy &G);
+GraphTy<Node> BuildDomTree(const GraphTy<Node> &G);
 
-GraphTy ComputeDJ(const GraphTy &G);
+struct DJNode final
+    : std::vector<std::pair<DJNode *, bool>> { // bool = true for trueborn
+                                               // children
+  std::set<DJNode *> Parents;
+  using ValueTy = unsigned;
+  ValueTy Val;
+  DJNode(ValueTy Value) : vector(), Val(Value) {}
 
-void DumpDJ(const GraphTy &DJ, std::ostream &OS);
+  void addBastard(DJNode *Child) {
+    assert(std::find_if(begin(), end(),
+                        [Child](const auto &Pair) {
+                          return Pair.first == Child;
+                        }) == end() &&
+           "Attempt to duplicate bastard.");
+    emplace_back(Child, false);
+  }
 
-void DumpDomTree(const GraphTy &DomTree, std::ostream &OS);
+  void adoptChild(DJNode *Child) {
+    assert(std::find_if(begin(), end(),
+                        [Child](const auto &Pair) {
+                          return Pair.first == Child;
+                        }) == end() &&
+           "Attempt to duplicate child.");
+    emplace_back(Child, true);
+    Child->addParent(this);
+  }
+
+  void addParent(DJNode *Parent) { Parents.insert(Parent); }
+};
+
+GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G);
+
+void DumpDJ(const GraphTy<DJNode> &DJ, std::ostream &OS);
+
+void DumpDomTree(const GraphTy<Node> &DomTree, std::ostream &OS);
 } // namespace lqvm
