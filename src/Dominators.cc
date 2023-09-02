@@ -121,6 +121,7 @@ GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
 
 void DumpDomTree(const GraphTy<Node> &DomTree, std::ostream &OS) {
   OS << "digraph  cluster_DomTree {\n";
+  OS << "label=\"Dom Tree\";\n";
   for (auto &&Nd : DomTree)
     OS << "Node_" << Nd.Val << " ["
        << "shape=circle, label=\"" << Nd.Val << "\"];\n";
@@ -156,6 +157,7 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
 
 void DumpDJ(const GraphTy<DJNode> &DJ, std::ostream &OS) {
   OS << "digraph  cluster_DJ {\n";
+  OS << "label=\"DJ-graph\";\n";
   for (auto &&Nd : DJ)
     OS << "Node_" << Nd.Val << " ["
        << "shape=circle, label=\"" << Nd.Val << "\"];\n";
