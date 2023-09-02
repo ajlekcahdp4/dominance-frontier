@@ -19,10 +19,9 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy &G);
 
 GraphTy BuildDomTree(const GraphTy &G);
 
-NodetoDominatorsTy ComputeDJ(const std::map<const Node *, const Node *> &IDom,
-                             const GraphTy &G);
+GraphTy ComputeDJ(const GraphTy &G);
 
-void DumpDJ(const NodetoDominatorsTy &DJ, std::ostream &OS);
+void DumpDJ(const GraphTy &DJ, std::ostream &OS);
 
 void DumpDomTree(const GraphTy &DomTree, std::ostream &OS);
 } // namespace lqvm

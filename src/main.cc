@@ -89,7 +89,7 @@ int main(int Argc, char **Argv) {
   if (DumpDJOpt.getNumOccurrences()) {
     std::ofstream DotFile(DumpDJOpt);
     if (DotFile.is_open())
-      DumpDJ(ComputeDJ(ComputeIDom(G), G), DotFile);
+      DumpDJ(ComputeDJ(G), DotFile);
     else {
       std::cerr << "Unable to open file";
       return EXIT_FAILURE;
