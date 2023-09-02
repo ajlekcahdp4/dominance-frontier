@@ -73,13 +73,11 @@ static lqvm::parser::symbol_type yylex(lqvm::scanner &p_scanner, lqvm::Driver &p
 
 all: graph { Driver.G = std::move($1); }
 
-graph: graph edge { 
+graph: graph edge {
     $$ = std::move($1);
     auto *From = $$.GetOrInsertNode($2.first);
     auto *To = $$.GetOrInsertNode($2.second);
-    std::cout << From->size() << std::endl;
     From->adoptChild(To);
-    std::cout << From->size() << std::endl;
   }
   | %empty {
       $$ = lqvm::GraphTy<Node>();
