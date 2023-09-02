@@ -7,6 +7,7 @@
 
 #include "Dominators.h"
 
+#include <llvm/ADT/BreadthFirstIterator.h>
 #include <llvm/ADT/PostOrderIterator.h>
 #include <llvm/ADT/STLExtras.h>
 
@@ -196,6 +197,18 @@ GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
     }
   }
   return DF;
+}
+
+GraphTy<Node> BuildIDF(const GraphTy<Node> &G) {
+  auto IDF = BuildDF(G);
+  for (auto &&CurrNode : IDF) {
+    auto BFS = llvm::drop_begin(llvm::breadth_first(&CurrNode));
+    for (auto *Des : BFS) {
+      if (!llvm::is_contained(CurrNode, Des))
+        CurrNode.adoptChild(Des);
+    }
+  }
+  return IDF;
 }
 
 } // namespace lqvm

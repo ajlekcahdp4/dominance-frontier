@@ -44,6 +44,10 @@ static cl::opt<std::string> DumpDFOpt("dump-df",
                                       cl::desc("Dump DF graph to dot file"),
                                       cl::value_desc("filename"),
                                       cl::cat(Options));
+static cl::opt<std::string> DumpIDFOpt("dump-idf",
+                                       cl::desc("Dump IDF graph to dot file"),
+                                       cl::value_desc("filename"),
+                                       cl::cat(Options));
 
 void PrintDominators(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
   for (auto &&[NodePtr, Doms] : Dominators) {
@@ -104,6 +108,16 @@ int main(int Argc, char **Argv) {
     if (DotFile.is_open()) {
       auto DF = BuildDF(G);
       DF.dumpDot(DotFile, "Dominance Frontier");
+    } else {
+      std::cerr << "Unable to open file";
+      return EXIT_FAILURE;
+    }
+  }
+  if (DumpIDFOpt.getNumOccurrences()) {
+    std::ofstream DotFile(DumpIDFOpt);
+    if (DotFile.is_open()) {
+      auto IDF = BuildIDF(G);
+      IDF.dumpDot(DotFile, "Iterated Dominance Frontier");
     } else {
       std::cerr << "Unable to open file";
       return EXIT_FAILURE;

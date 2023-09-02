@@ -219,4 +219,13 @@ public:
   static ChildIteratorType child_begin(NodeRef N) { return N->cbegin(); }
   static ChildIteratorType child_end(NodeRef N) { return N->cend(); }
 };
+
+template <> class GraphTraits<lqvm::Node *> {
+public:
+  using NodeRef = lqvm::Node *;
+  using ChildIteratorType = lqvm::Node::iterator;
+  static NodeRef getEntryNode(lqvm::Node *N) { return N; }
+  static ChildIteratorType child_begin(NodeRef N) { return N->begin(); }
+  static ChildIteratorType child_end(NodeRef N) { return N->end(); }
+};
 } // namespace llvm
