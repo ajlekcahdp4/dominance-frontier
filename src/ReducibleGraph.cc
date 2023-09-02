@@ -6,9 +6,9 @@
 // ----------------------------------------------------------------------------
 
 #include "ReducibleGraph.h"
+
 #include <algorithm>
 namespace lqvm {
-
 void GraphTy::dumpDot(std::ostream &OS) const {
   OS << "digraph cluster_1 {\n";
   auto DeclareNodesAndEdges = [&OS](const Node &Nd) {

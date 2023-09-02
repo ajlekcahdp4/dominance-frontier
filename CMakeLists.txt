@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.13)
 project(dominance-frontier)
 
+find_package(LLVM REQUIRED CONFIG)
+
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+llvm_map_components_to_libnames(llvm_libs support )
+
+
 option(INSOURCEBUILD OFF) # Prevent in-source style builds
 if((${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR}) AND NOT
                                                               ${INSOURCEBUILD})
@@ -29,7 +37,6 @@ endif()
 include(cmake/functions.cmake)
 include(cmake/dependencies.cmake)
 
-add_subdirectory(graphs)
 
 set(DOMFRONT_SOURCES
     src/main.cc 
@@ -38,8 +45,8 @@ set(DOMFRONT_SOURCES
 add_executable(domfront ${DOMFRONT_SOURCES})
 target_enable_linter(domfront)
 target_include_directories(domfront PUBLIC include)
-target_link_libraries(domfront  graphs)
 target_compile_features(domfront PUBLIC cxx_std_20)
+target_link_libraries(domfront ${llvm_libs})
 enable_warnings(domfront)
 
 option(BUILD_DOCS OFF)
