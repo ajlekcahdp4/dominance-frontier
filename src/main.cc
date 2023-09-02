@@ -9,7 +9,9 @@
 
 #include <llvm/Support/CommandLine.h>
 
+#include <fstream>
 #include <iostream>
+#include <string>
 
 namespace lqvm {
 using namespace llvm;
@@ -20,8 +22,10 @@ static cl::opt<unsigned long long>
     GenIterations("gen-iterations",
                   cl::desc("Iteration number for CFG generation"),
                   cl::cat(Options), cl::init(10));
-static cl::opt<bool> DumpCFG("dump-cfg", cl::desc("Dump CFG"), cl::cat(Options),
-                             cl::init(false));
+static cl::opt<std::string> DumpCFG("dump-cfg",
+                                    cl::desc("Dump CFG to dot file"),
+                                    cl::value_desc("filename"),
+                                    cl::cat(Options));
 static cl::opt<bool> PrintDominatorsOpt("print-dominators",
                                         cl::desc("Print Dominators"),
                                         cl::cat(Options), cl::init(false));
@@ -33,8 +37,11 @@ static cl::opt<bool> PrintIDomOpt("print-idom",
 void PrintDominators(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
   for (auto &&[NodePtr, Doms] : Dominators) {
     OS << NodePtr->Val << ": ";
-    for (auto *Dom : Doms)
-      OS << Dom->Val << ", ";
+    for (auto *Dom : Doms) {
+      OS << Dom->Val;
+      if (Dom != *std::prev(Doms.end()))
+        OS << ", ";
+    }
     OS << std::endl;
   }
 }
@@ -50,8 +57,15 @@ int main(int Argc, char **Argv) {
   cl::ParseCommandLineOptions(Argc, Argv, "");
   ReducibleGraphBuilder GB(GenIterations, Seed);
   auto G = GB.generate();
-  if (DumpCFG)
-    G.dumpDot(std::cout);
+  if (DumpCFG.getNumOccurrences()) {
+    std::ofstream DotFile(DumpCFG);
+    if (DotFile.is_open())
+      G.dumpDot(DotFile);
+    else {
+      std::cerr << "Unable to open file";
+      return EXIT_FAILURE;
+    }
+  }
   if (PrintDominatorsOpt)
     PrintDominators(ComputeDominators(G), std::cout);
   if (PrintIDomOpt)
