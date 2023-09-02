@@ -84,6 +84,14 @@ public:
     return std::addressof(*Found);
   }
 
+  unsigned getIndex(typename NodeTy::ValueTy Val) const {
+    auto Found =
+        llvm::find_if(*this, [Val](const NodeTy &Nd) { return Nd.Val == Val; });
+    assert(Found != end() &&
+           "Cannot found vertex for which index for requested.");
+    return std::distance(begin(), Found);
+  }
+
   void dumpDot(std::ostream &OS, std::string_view Title) const;
 };
 
