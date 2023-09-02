@@ -6,21 +6,29 @@
 // ----------------------------------------------------------------------------
 #pragma once
 
-#include "graphs/directed_graph.hpp"
-#include <algorithm>
+#include "../graphs/include/graphs/directed_graph.hpp"
+#include <ostream>
 
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
 
-class reducible_graph_builder final {
-  graphs::directed_graph graph;
+class ReducibleGraphBuilder final {
+  using GraphTy = graphs::basic_directed_graph<unsigned, void, void>;
+  GraphTy Graph;
 
-  void generate_impl() {}
+  void addSelfLoop(GraphTy::value_type Nd) { Graph.insert(Nd, Nd); }
 
 public:
-  graphs::directed_graph generate() {
-    generate_impl();
-    return std::move(graph);
+  void dumpDot(std::ostream &OS) const;
+
+  void generateImpl() {
+    Graph.insert(0);
+    addSelfLoop(0);
+  }
+
+  GraphTy generate() {
+    generateImpl();
+    return std::move(Graph);
   }
 };
 } // namespace lqvm
