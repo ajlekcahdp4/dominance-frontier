@@ -80,7 +80,7 @@ int main(int Argc, char **Argv) {
   if (DumpDomTreeOpt.getNumOccurrences()) {
     std::ofstream DotFile(DumpDomTreeOpt);
     if (DotFile.is_open())
-      DumpDomTree(ComputeIDom(G), DotFile);
+      DumpDomTree(BuildDomTree(G), DotFile);
     else {
       std::cerr << "Unable to open file";
       return EXIT_FAILURE;

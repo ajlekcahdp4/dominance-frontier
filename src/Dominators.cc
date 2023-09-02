@@ -100,15 +100,31 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy &G) {
   return IDom;
 }
 
-void DumpDomTree(const std::map<const Node *, const Node *> &IDom,
-                 std::ostream &OS) {
-  OS << "digraph  cluster_2 {\n";
-  for (auto [Nd, _] : IDom)
-    OS << "Node_" << Nd->Val << " ["
-       << "shape=circle, label=\"" << Nd->Val << "\"];\n";
-  for (auto [Nd, Dom] : IDom)
-    if (Nd->Val != 0)
-      OS << "Node_" << Dom->Val << " -> Node_" << Nd->Val << ";\n";
+Tree BuildDomTree(const GraphTy &G) {
+  auto IDom = ComputeIDom(G);
+  Tree T(IDom.size());
+  for (auto [Nd, Dom] : IDom) {
+    auto IsCurNode = [Nd](const auto &Pair) { return Pair.second == Nd; };
+    auto *TreeNode = T.GetOrInsertNode(Nd->Val);
+    auto Found = std::find_if(IDom.begin(), IDom.end(), IsCurNode);
+    while (Found != IDom.end()) {
+      if (Found->first->Val != 0)
+        TreeNode->Children.push_back(T.GetOrInsertNode(Found->first->Val));
+      Found = std::find_if(std::next(Found), IDom.end(), IsCurNode);
+    }
+  }
+  return T;
+}
+
+void DumpDomTree(const Tree &DomTree, std::ostream &OS) {
+  OS << "digraph  cluster_DomTree {\n";
+  for (auto &&Nd : DomTree.Nodes)
+    OS << "Node_" << Nd.Val << " ["
+       << "shape=circle, label=\"" << Nd.Val << "\"];\n";
+  for (auto &&Nd : DomTree.Nodes)
+    for (auto *Child : Nd.Children)
+      OS << "Node_" << Nd.Val << " -> "
+         << "Node_" << Child->Val << ";\n";
   OS << "}";
 }
 
