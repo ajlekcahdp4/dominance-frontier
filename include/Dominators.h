@@ -45,8 +45,8 @@ struct DJNode final
   using typename vector::value_type;
 
   bool isBastardOf(const DJNode *Parent) const {
-    auto Found = llvm::find_if(
-        *Parent, [this](const auto &Pair) { return Pair.first == this; });
+    auto Found = std::find_if(
+        Parent->begin(), Parent->end(), [this](const auto &Pair) { return Pair.first == this; });
     if (Found == Parent->end())
       return false;
     return !Found->second;
@@ -95,7 +95,7 @@ std::vector<const NodeTy *> pathUp(const NodeTy *From) {
   const auto *CurrNode = From;
   Path.push_back(CurrNode);
   while (true) {
-    auto Found = llvm::find_if(CurrNode->Parents, [CurrNode](const auto *P) {
+    auto Found = std::find_if(CurrNode->Parents.begin(), CurrNode->Parents.end(), [CurrNode](const auto *P) {
       return !CurrNode->isBastardOf(P); // A.K.A. trueborn
     });
     if (Found == CurrNode->Parents.end())

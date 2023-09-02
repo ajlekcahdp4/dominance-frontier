@@ -35,7 +35,7 @@ inline auto first_match(const ContTy &Cont1, const ContTy &Cont2)
   auto FirstIt = Cont1.cbegin();
   auto FirstEnd = Cont1.cend();
   while (FirstIt != FirstEnd) {
-    auto FoundIt = llvm::find(Cont2, *FirstIt);
+    auto FoundIt = std::find(Cont2.begin(), Cont2.end(), *FirstIt);
     if (FoundIt != Cont2.cend())
       break;
     ++FirstIt;

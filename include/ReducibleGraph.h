@@ -55,7 +55,7 @@ struct Node final : private std::vector<Node *> {
   void abandonChild(Node *Child) {
     assert(std::find(begin(), end(), Child) != end() &&
            "Attempt to remove non-existent child.");
-    llvm::erase_value(*this, Child);
+    erase(std::remove(begin(), end(), Child), end());
     Child->removeParent(this);
   }
 
@@ -104,8 +104,8 @@ public:
   GraphTy &operator=(GraphTy &&) = default;
 
   NodeTy *getOrInsertNode(ValueTy Val) {
-    auto Found = llvm::find_if(
-        *this, [Val](const NodeTy &Node) { return Node.Val == Val; });
+    auto Found = std::find_if(
+        begin(), end(), [Val](const NodeTy &Node) { return Node.Val == Val; });
     if (Found == end()) {
       BaseTy::emplace_back(Val);
       return &back();
@@ -115,7 +115,7 @@ public:
 
   unsigned getIndex(ValueTy Val) const {
     auto Found =
-        llvm::find_if(*this, [Val](const NodeTy &Nd) { return Nd.Val == Val; });
+        std::find_if(begin(), end(), [Val](const NodeTy &Nd) { return Nd.Val == Val; });
     assert(Found != end() &&
            "Cannot found vertex for which index for requested.");
     return std::distance(begin(), Found);
@@ -181,8 +181,8 @@ class ReducibleGraphBuilder final {
     case 2: {
       switch (getUniformRandom(0, 2)) {
       case 0: {
-        llvm::for_each(*Nd, [New](Node *Child) { New->adoptChild(Child); });
-        llvm::for_each(*Nd, [Nd](Node *Child) { Nd->abandonChild(Child); });
+        srd::for_each(Nd->begin(), Nd->end(), [New](Node *Child) { New->adoptChild(Child); });
+        std::for_each(Nd->begin(), Nd->end(), [Nd](Node *Child) { Nd->abandonChild(Child); });
         Nd->adoptChild(New);
         break;
       }
@@ -195,8 +195,8 @@ class ReducibleGraphBuilder final {
       }
       case 2: {
 
-        llvm::for_each(*Nd, [New](Node *Child) { New->adoptChild(Child); });
-        llvm::for_each(*Nd, [Nd](Node *Child) { Nd->abandonChild(Child); });
+        std::for_each(Nd->begin(), Nd->end(), [New](Node *Child) { New->adoptChild(Child); });
+        std::for_each(Nd->begin(), Nd->end(), [Nd](Node *Child) { Nd->abandonChild(Child); });
         Nd->adoptChild(New);
         Nd->adoptChild(New->back());
         break;
