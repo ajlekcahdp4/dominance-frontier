@@ -100,6 +100,7 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
       }
     }
   }
+  IDom[&G.front()] = nullptr;
   return IDom;
 }
 
