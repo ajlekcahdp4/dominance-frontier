@@ -22,11 +22,15 @@ static cl::opt<unsigned long long>
                   cl::cat(Options), cl::init(10));
 static cl::opt<bool> DumpCFG("dump-cfg", cl::desc("Dump CFG"), cl::cat(Options),
                              cl::init(false));
-static cl::opt<bool> PrintDominators("print-dominators",
-                                     cl::desc("Print Dominators"),
-                                     cl::cat(Options), cl::init(false));
+static cl::opt<bool> PrintDominatorsOpt("print-dominators",
+                                        cl::desc("Print Dominators"),
+                                        cl::cat(Options), cl::init(false));
 
-static void Print(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
+static cl::opt<bool> PrintIDomOpt("print-idom",
+                                  cl::desc("Print Immediate Dominators"),
+                                  cl::cat(Options), cl::init(false));
+
+void PrintDominators(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
   for (auto &&[NodePtr, Doms] : Dominators) {
     OS << NodePtr->Val << ": ";
     for (auto *Dom : Doms)
@@ -35,6 +39,10 @@ static void Print(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
   }
 }
 
+void PrintIDom(const std::map<const Node *, const Node *> M, std::ostream &OS) {
+  for (auto [Nd, Dom] : M)
+    OS << Nd->Val << ": " << Dom->Val << "\n";
+}
 } // namespace lqvm
 
 using namespace lqvm;
@@ -44,10 +52,8 @@ int main(int Argc, char **Argv) {
   auto G = GB.generate();
   if (DumpCFG)
     G.dumpDot(std::cout);
-  if (PrintDominators)
-    Print(ComputeDominators(G), std::cout);
-  // std::cout << "Immediate dominators:\n";
-  auto IDom = ComputeIDom(G);
-  for (auto [Nd, Dom] : IDom)
-    std::cerr << Nd->Val << ": " << Dom->Val << "\n";
+  if (PrintDominatorsOpt)
+    PrintDominators(ComputeDominators(G), std::cout);
+  if (PrintIDomOpt)
+    PrintIDom(ComputeIDom(G), std::cout);
 }
