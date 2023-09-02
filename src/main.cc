@@ -8,7 +8,7 @@
 #include <iostream>
 
 int main() {
-  lqvm::ReducibleGraphBuilder GB;
-  GB.generateImpl();
-  GB.dumpDot(std::cout);
+  lqvm::ReducibleGraphBuilder GB(200);
+  auto G = GB.generate();
+  G.dumpDot(std::cout);
 }
