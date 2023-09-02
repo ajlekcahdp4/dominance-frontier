@@ -29,13 +29,12 @@ static cl::opt<bool> PrintDominators("print-dominators",
 static void Print(const NodetoDominatorsTy &Dominators) {
   for (auto &&[NodePtr, Doms] : Dominators) {
     std::cout << NodePtr->Val << ": ";
-    if (Doms) {
-      for (auto *Dom : Doms.value())
-        std::cout << Dom->Val << ", ";
-      std::cout << std::endl;
-    }
+    for (auto *Dom : Doms)
+      std::cout << Dom->Val << ", ";
+    std::cout << std::endl;
   }
 }
+
 } // namespace lqvm
 
 using namespace lqvm;
@@ -47,4 +46,8 @@ int main(int Argc, char **Argv) {
     G.dumpDot(std::cout);
   if (PrintDominators)
     Print(ComputeDominators(G));
+  // std::cout << "Immediate dominators:\n";
+  // auto IDom = ComputeIDom(G);
+  // for (auto [Nd, Dom] : IDom)
+  //   std::cout << Nd->Val << ": " << Dom->Val << "\n";
 }
