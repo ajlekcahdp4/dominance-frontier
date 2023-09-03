@@ -79,8 +79,8 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
   bool Changed = true;
   while (Changed) {
     Changed = false;
-		auto PO = postOrder(G);
-		auto RPO = std::views::reverse(PO);
+    auto PO = postOrder(G);
+    auto RPO = std::views::reverse(PO);
     auto PickParent = [RPO](const auto *Nd) -> const Node * {
       for (const auto *Parent : Nd->Parents) {
         if (utils::GetIndexIn(Parent, RPO) < utils::GetIndexIn(Nd, RPO))

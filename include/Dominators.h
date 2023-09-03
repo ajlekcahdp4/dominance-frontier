@@ -54,18 +54,18 @@ struct DJNode final
 
   void addBastard(DJNode *Child) {
     assert(std::ranges::find_if(*this,
-                        [Child](const auto &Pair) {
-                          return Pair.first == Child;
-                        }) == end() &&
+                                [Child](const auto &Pair) {
+                                  return Pair.first == Child;
+                                }) == end() &&
            "Attempt to duplicate bastard.");
     emplace_back(Child, false);
   }
 
   void adoptChild(DJNode *Child) {
     assert(std::ranges::find_if(*this,
-                        [Child](const auto &Pair) {
-                          return Pair.first == Child;
-                        }) == end() &&
+                                [Child](const auto &Pair) {
+                                  return Pair.first == Child;
+                                }) == end() &&
            "Attempt to duplicate child.");
     emplace_back(Child, true);
     Child->addParent(this);
@@ -95,9 +95,10 @@ std::vector<const NodeTy *> pathUp(const NodeTy *From) {
   const auto *CurrNode = From;
   Path.push_back(CurrNode);
   while (true) {
-    auto Found = std::ranges::find_if(CurrNode->Parents, [CurrNode](const auto *P) {
-      return !CurrNode->isBastardOf(P); // A.K.A. trueborn
-    });
+    auto Found =
+        std::ranges::find_if(CurrNode->Parents, [CurrNode](const auto *P) {
+          return !CurrNode->isBastardOf(P); // A.K.A. trueborn
+        });
     if (Found == CurrNode->Parents.end())
       break;
     CurrNode = *Found;

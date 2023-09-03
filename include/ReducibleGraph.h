@@ -12,14 +12,14 @@
 
 #include <algorithm>
 #include <cassert>
+#include <functional>
 #include <ostream>
+#include <queue>
 #include <random>
+#include <ranges>
 #include <set>
 #include <string_view>
-#include <ranges>
 #include <unordered_map>
-#include <functional>
-#include <queue>
 
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
@@ -107,7 +107,8 @@ public:
   GraphTy &operator=(GraphTy &&) = default;
 
   NodeTy *getOrInsertNode(ValueTy Val) {
-    auto Found = std::ranges::find_if(*this, [Val](const NodeTy &Node) { return Node.Val == Val; });
+    auto Found = std::ranges::find_if(
+        *this, [Val](const NodeTy &Node) { return Node.Val == Val; });
     if (Found == end()) {
       BaseTy::emplace_back(Val);
       return &back();
@@ -116,8 +117,8 @@ public:
   }
 
   unsigned getIndex(ValueTy Val) const {
-    auto Found =
-        std::ranges::find_if(*this, [Val](const NodeTy &Nd) { return Nd.Val == Val; });
+    auto Found = std::ranges::find_if(
+        *this, [Val](const NodeTy &Nd) { return Nd.Val == Val; });
     assert(Found != end() &&
            "Cannot found vertex for which index for requested.");
     return std::distance(begin(), Found);
@@ -184,9 +185,9 @@ class ReducibleGraphBuilder final {
       switch (getUniformRandom(0, 2)) {
       case 0: {
         for (auto &&Child : *Nd) {
-					New->adoptChild(Child);
-					Nd->abandonChild(Child);
-				}	
+          New->adoptChild(Child);
+          Nd->abandonChild(Child);
+        }
         Nd->adoptChild(New);
         break;
       }
@@ -199,10 +200,10 @@ class ReducibleGraphBuilder final {
       }
       case 2: {
         for (auto &&Child : *Nd) {
-					New->adoptChild(Child);
-					Nd->abandonChild(Child);
-				}
-				Nd->adoptChild(New);
+          New->adoptChild(Child);
+          Nd->abandonChild(Child);
+        }
+        Nd->adoptChild(New);
         Nd->adoptChild(New->back());
         break;
       }
@@ -256,70 +257,59 @@ public:
   }
 };
 
-
-
 template <typename NodeTy>
 std::vector<const NodeTy *> postOrder(const GraphTy<NodeTy> &G) {
-	enum class ColorTy {
-		E_WHITE,
-		E_GRAY,
-		E_BLACK
-	};
+  enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
 
-	std::vector<const NodeTy *> PO;
-	std::unordered_map<unsigned, ColorTy> Nodes;
-	std::ranges::transform(G, std::inserter(Nodes, Nodes.begin()), [](const auto &Nd) {
-			return std::make_pair(Nd.Val, ColorTy::E_WHITE);
-		});
-	std::function<void(unsigned)> DFSVisit;
-	DFSVisit = [&Nodes, &G, &PO, &DFSVisit](unsigned Val){
-		Nodes.at(Val) = ColorTy::E_GRAY;
-		const auto &Nd = G[Val];
-		for (const auto *Child : Nd){
-			if (Nodes.at(Child->Val) == ColorTy::E_WHITE)
-				DFSVisit(Child->Val);
-		}
-		Nodes.at(Val) = ColorTy::E_BLACK;
-		PO.push_back(&Nd);
-	};
+  std::vector<const NodeTy *> PO;
+  std::unordered_map<unsigned, ColorTy> Nodes;
+  std::ranges::transform(
+      G, std::inserter(Nodes, Nodes.begin()),
+      [](const auto &Nd) { return std::make_pair(Nd.Val, ColorTy::E_WHITE); });
+  std::function<void(unsigned)> DFSVisit;
+  DFSVisit = [&Nodes, &G, &PO, &DFSVisit](unsigned Val) {
+    Nodes.at(Val) = ColorTy::E_GRAY;
+    const auto &Nd = G[Val];
+    for (const auto *Child : Nd) {
+      if (Nodes.at(Child->Val) == ColorTy::E_WHITE)
+        DFSVisit(Child->Val);
+    }
+    Nodes.at(Val) = ColorTy::E_BLACK;
+    PO.push_back(&Nd);
+  };
 
-	for (auto Pair : Nodes){
-		if (Pair.second == ColorTy::E_WHITE)
-			DFSVisit(Pair.first);
-	}
-	return PO;
+  for (auto Pair : Nodes) {
+    if (Pair.second == ColorTy::E_WHITE)
+      DFSVisit(Pair.first);
+  }
+  return PO;
 }
 
-template <typename NodeTy>
-std::vector<NodeTy *> breadthFirst(NodeTy *Root) {
-	enum class ColorTy {
-		E_WHITE,
-		E_GRAY,
-		E_BLACK
-	};
-	std::vector<NodeTy *> BF;
-	std::unordered_map<unsigned, ColorTy> Nodes;
-	Nodes[Root->Val] = ColorTy::E_GRAY;
-	std::queue<NodeTy *> Q;
-	Q.push(Root);
+template <typename NodeTy> std::vector<NodeTy *> breadthFirst(NodeTy *Root) {
+  enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
+  std::vector<NodeTy *> BF;
+  std::unordered_map<unsigned, ColorTy> Nodes;
+  Nodes[Root->Val] = ColorTy::E_GRAY;
+  std::queue<NodeTy *> Q;
+  Q.push(Root);
 
-	while (!Q.empty()){
-		auto *Curr = Q.front();
-		BF.push_back(Curr);
-		Q.pop();
-		Nodes.emplace(Curr->Val, ColorTy::E_WHITE);
-		for (auto *Child : *Curr) {
-			auto &ChildColor = Nodes.emplace(Child->Val, ColorTy::E_WHITE).first->second;
-			if (ChildColor == ColorTy::E_WHITE)	{
-				ChildColor = ColorTy::E_GRAY;
-				Q.push(Child);
-			}
-		}
-		Nodes.at(Curr->Val) = ColorTy::E_BLACK;
-	}
-	return BF;
+  while (!Q.empty()) {
+    auto *Curr = Q.front();
+    BF.push_back(Curr);
+    Q.pop();
+    Nodes.emplace(Curr->Val, ColorTy::E_WHITE);
+    for (auto *Child : *Curr) {
+      auto &ChildColor =
+          Nodes.emplace(Child->Val, ColorTy::E_WHITE).first->second;
+      if (ChildColor == ColorTy::E_WHITE) {
+        ChildColor = ColorTy::E_GRAY;
+        Q.push(Child);
+      }
+    }
+    Nodes.at(Curr->Val) = ColorTy::E_BLACK;
+  }
+  return BF;
 }
-
 
 } // namespace lqvm
 

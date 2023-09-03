@@ -6,11 +6,10 @@
 // ----------------------------------------------------------------------------
 #pragma once
 
-
 #include <algorithm>
+#include <cassert>
 #include <ranges>
 #include <vector>
-#include <cassert>
 
 namespace lqvm {
 namespace utils {
@@ -44,8 +43,7 @@ inline auto first_match(const ContTy &Cont1, const ContTy &Cont2)
   return FirstIt;
 }
 
-template <std::ranges::input_range RangeTy>
-auto drop_begin(RangeTy R) {
+template <std::ranges::input_range RangeTy> auto drop_begin(RangeTy R) {
   return R;
 }
 
