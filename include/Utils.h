@@ -14,7 +14,7 @@
 namespace lqvm {
 namespace utils {
 template <typename Cont>
-Cont OrderedIntersection(const Cont &First, const Cont &Second) {
+Cont orderedIntersection(const Cont &First, const Cont &Second) {
   Cont Res;
   for (auto &&Entry : First)
     if (std::ranges::find(Second, Entry) != Second.end())
@@ -23,7 +23,7 @@ Cont OrderedIntersection(const Cont &First, const Cont &Second) {
 }
 
 template <typename Range, typename NodeTy>
-inline size_t GetIndexIn(const NodeTy *Nd, Range Order) {
+inline size_t getIndexIn(const NodeTy *Nd, Range Order) {
   auto Found = std::find(Order.begin(), Order.end(), Nd);
   assert(Found != Order.end());
   return std::distance(Order.begin(), Found);

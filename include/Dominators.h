@@ -14,11 +14,11 @@
 #include <vector>
 namespace lqvm {
 using NodetoDominatorsTy = std::map<const Node *, std::vector<const Node *>>;
-NodetoDominatorsTy ComputeDominators(const GraphTy<Node> &G);
+NodetoDominatorsTy computeDominators(const GraphTy<Node> &G);
 
-std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G);
+std::map<const Node *, const Node *> computeIDom(const GraphTy<Node> &G);
 
-GraphTy<Node> BuildDomTree(const GraphTy<Node> &G);
+GraphTy<Node> buildDomTree(const GraphTy<Node> &G);
 
 struct DJNode final
     : private std::vector<std::pair<DJNode *, bool>> { // bool = true for
@@ -119,9 +119,9 @@ std::vector<const NodeTy *> findPathToNCA(const NodeTy *From,
   return Res;
 }
 
-GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G);
+GraphTy<DJNode> computeDJ(const GraphTy<Node> &G);
 
-GraphTy<Node> BuildDF(const GraphTy<Node> &G);
+GraphTy<Node> buildDF(const GraphTy<Node> &G);
 
-GraphTy<Node> BuildIDF(const GraphTy<Node> &G);
+GraphTy<Node> buildIDF(const GraphTy<Node> &G);
 } // namespace lqvm

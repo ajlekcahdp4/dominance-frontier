@@ -11,7 +11,7 @@
 #include <string_view>
 
 namespace lqvm {
-size_t ComputeHash(const NodetoDominatorsTy &M) {
+size_t computeHash(const NodetoDominatorsTy &M) {
   size_t Hash = 0;
   for (auto &&[NodePtr, Doms] : M) {
     for (auto *Dom : Doms)
@@ -20,7 +20,7 @@ size_t ComputeHash(const NodetoDominatorsTy &M) {
   return Hash;
 }
 
-void ComputeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
+void computeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
   std::vector<const Node *> AllNodesSet;
   for (auto &&Nd : G)
     AllNodesSet.push_back(&Nd);
@@ -28,48 +28,48 @@ void ComputeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
     std::vector<const Node *> Doms = AllNodesSet;
     for (auto *Parent : Nd.Parents)
       if (M.contains(Parent))
-        Doms = utils::OrderedIntersection(Doms, M.at(Parent));
+        Doms = utils::orderedIntersection(Doms, M.at(Parent));
     Doms.push_back(&Nd);
     if (Nd.Val != G.getEntryNodeVal())
       M[&Nd] = std::move(Doms);
   }
 }
 
-NodetoDominatorsTy ComputeDominators(const GraphTy<Node> &G) {
+NodetoDominatorsTy computeDominators(const GraphTy<Node> &G) {
   NodetoDominatorsTy NodeToDominators;
   NodeToDominators[&G.front()] = std::vector<const Node *>{&G.front()};
-  auto NewHash = ComputeHash(NodeToDominators);
+  auto NewHash = computeHash(NodeToDominators);
   auto OldHash = NewHash;
   do {
     OldHash = NewHash;
-    ComputeDominatorsIteration(G, NodeToDominators);
-    NewHash = ComputeHash(NodeToDominators);
+    computeDominatorsIteration(G, NodeToDominators);
+    NewHash = computeHash(NodeToDominators);
   } while (NewHash != OldHash);
   return NodeToDominators;
 }
 
-const Node *IntersectNodes(const Node *First, const Node *Second, auto PO,
+const Node *intersectNodes(const Node *First, const Node *Second, auto PO,
                            const std::map<const Node *, const Node *> &IDoms) {
-assert (First);
-assert(Second);
+	assert (First);
+	assert(Second);
 	auto *Finger1 = First;
   auto *Finger2 = Second;
   while (Finger1 != Finger2) {
-    auto Idx1 = utils::GetIndexIn(Finger1, PO);
-    auto Idx2 = utils::GetIndexIn(Finger2, PO);
+    auto Idx1 = utils::getIndexIn(Finger1, PO);
+    auto Idx2 = utils::getIndexIn(Finger2, PO);
     while (Idx1 < Idx2) {
       Finger1 = IDoms.at(Finger1);
-      Idx1 = utils::GetIndexIn(Finger1, PO);
+      Idx1 = utils::getIndexIn(Finger1, PO);
     }
     while (Idx2 < Idx1) {
       Finger2 = IDoms.at(Finger2);
-      Idx2 = utils::GetIndexIn(Finger2, PO);
+      Idx2 = utils::getIndexIn(Finger2, PO);
     }
   }
   return Finger1;
 }
 
-std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
+std::map<const Node *, const Node *> computeIDom(const GraphTy<Node> &G) {
   std::map<const Node *, const Node *> IDom;
   for (auto &&Nd : G)
     IDom[&Nd] = nullptr;
@@ -77,11 +77,11 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
   bool Changed = true;
   while (Changed) {
     Changed = false;
-    auto PO = postOrder(G);
+    auto PO = PostOrder(G);
     auto RPO = std::views::reverse(PO);
     auto PickParent = [RPO](const auto *Nd) -> const Node * {
       for (const auto *Parent : Nd->Parents) {
-        if (utils::GetIndexIn(Parent, RPO) < utils::GetIndexIn(Nd, RPO))
+        if (utils::getIndexIn(Parent, RPO) < utils::getIndexIn(Nd, RPO))
           return Parent;
       }
       return nullptr;
@@ -91,7 +91,7 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
       for (auto *Parent : CNode->Parents) {
 				if (!NewIdom) NewIdom = Parent;
         else if (Parent != NewIdom && IDom[Parent]) {
-          NewIdom = IntersectNodes(Parent, NewIdom, PO, IDom);
+          NewIdom = intersectNodes(Parent, NewIdom, PO, IDom);
         }
       }
       if (IDom[CNode] != NewIdom) {
@@ -104,8 +104,8 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
   return IDom;
 }
 
-GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
-  auto IDom = ComputeIDom(G);
+GraphTy<Node> buildDomTree(const GraphTy<Node> &G) {
+  auto IDom = computeIDom(G);
   GraphTy<Node> T;
   T.reserve(G.size());
   for (auto [Nd, Dom] : IDom) {
@@ -121,8 +121,8 @@ GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
   return T;
 }
 
-GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
-  auto IDom = ComputeIDom(G);
+GraphTy<DJNode> computeDJ(const GraphTy<Node> &G) {
+  auto IDom = computeIDom(G);
   GraphTy<DJNode> DJ;
   DJ.reserve(G.size());
   for (auto &&Nd : G)
@@ -145,8 +145,8 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
   return DJ;
 }
 
-GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
-  auto DJ = ComputeDJ(G);
+GraphTy<Node> buildDF(const GraphTy<Node> &G) {
+  auto DJ = computeDJ(G);
   GraphTy<Node> DF;
   for (auto &&Nd : G)
     DF.getOrInsertNode(Nd.Val);
@@ -172,10 +172,10 @@ GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
   return DF;
 }
 
-GraphTy<Node> BuildIDF(const GraphTy<Node> &G) {
-  auto IDF = BuildDF(G);
+GraphTy<Node> buildIDF(const GraphTy<Node> &G) {
+  auto IDF = buildDF(G);
   for (auto &&CurrNode : IDF) {
-    auto BFS = breadthFirst(&CurrNode);
+    auto BFS = BreadthFirst(&CurrNode);
     for (auto DesIt = std::next(BFS.begin()), End = BFS.end(); DesIt != End;
          ++DesIt) {
       if (!utils::is_contained(CurrNode, *DesIt))

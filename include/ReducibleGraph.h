@@ -256,53 +256,65 @@ public:
 };
 
 template <typename NodeTy>
-std::vector<const NodeTy *> postOrder(const GraphTy<NodeTy> &G) {
-  enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
+class PostOrder final : private std::vector<const NodeTy *> {
+  using BaseTy = std::vector<const NodeTy *>;
 
-  std::vector<const NodeTy *> PO;
-  std::unordered_map<const NodeTy *, ColorTy> Nodes;
-  std::ranges::transform(
-      G, std::inserter(Nodes, Nodes.begin()),
-      [](const auto &Nd) { return std::make_pair(&Nd, ColorTy::E_WHITE); });
-  std::function<void(const NodeTy *)> DFSVisit;
-  DFSVisit = [&Nodes, &G, &PO, &DFSVisit](const NodeTy *Start) {
-    Nodes.at(Start) = ColorTy::E_GRAY;
-    for (const auto *Child : *Start) {
-      if (Nodes.at(Child) == ColorTy::E_WHITE)
-        DFSVisit(Child);
-    }
-    Nodes.at(Start) = ColorTy::E_BLACK;
-    PO.push_back(Start);
-  };
-
-  DFSVisit(&G.front());
-  return PO;
-}
-
-template <typename NodeTy> std::vector<NodeTy *> breadthFirst(NodeTy *Root) {
-  enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
-  std::vector<NodeTy *> BF;
-  std::unordered_map<unsigned, ColorTy> Nodes;
-  Nodes[Root->Val] = ColorTy::E_GRAY;
-  std::queue<NodeTy *> Q;
-  Q.push(Root);
-
-  while (!Q.empty()) {
-    auto *Curr = Q.front();
-    BF.push_back(Curr);
-    Q.pop();
-    Nodes.emplace(Curr->Val, ColorTy::E_WHITE);
-    for (auto *Child : *Curr) {
-      auto &ChildColor =
-          Nodes.emplace(Child->Val, ColorTy::E_WHITE).first->second;
-      if (ChildColor == ColorTy::E_WHITE) {
-        ChildColor = ColorTy::E_GRAY;
-        Q.push(Child);
+public:
+  explicit PostOrder(const GraphTy<NodeTy> &G) {
+    enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
+    std::unordered_map<const NodeTy *, ColorTy> Nodes;
+    std::ranges::transform(
+        G, std::inserter(Nodes, Nodes.begin()),
+        [](const auto &Nd) { return std::make_pair(&Nd, ColorTy::E_WHITE); });
+    std::function<void(const NodeTy *)> DFSVisit;
+    DFSVisit = [&Nodes, &G, this, &DFSVisit](const NodeTy *Start) {
+      Nodes.at(Start) = ColorTy::E_GRAY;
+      for (const auto *Child : *Start) {
+        if (Nodes.at(Child) == ColorTy::E_WHITE)
+          DFSVisit(Child);
       }
-    }
-    Nodes.at(Curr->Val) = ColorTy::E_BLACK;
+      Nodes.at(Start) = ColorTy::E_BLACK;
+      BaseTy::push_back(Start);
+    };
+    DFSVisit(&G.front());
   }
-  return BF;
-}
+
+  auto begin() const { return BaseTy::cbegin(); }
+
+  auto end() const { return BaseTy::cend(); }
+};
+
+template <typename NodeTy>
+class BreadthFirst final : private std::vector<NodeTy *> {
+  using BaseTy = std::vector<NodeTy *>;
+
+public:
+  explicit BreadthFirst(NodeTy *Start) {
+    enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
+    std::unordered_map<unsigned, ColorTy> Nodes;
+    Nodes[Start->Val] = ColorTy::E_GRAY;
+    std::queue<NodeTy *> Q;
+    Q.push(Start);
+    while (!Q.empty()) {
+      auto *Curr = Q.front();
+      BaseTy::push_back(Curr);
+      Q.pop();
+      Nodes.emplace(Curr->Val, ColorTy::E_WHITE);
+      for (auto *Child : *Curr) {
+        auto &ChildColor =
+            Nodes.emplace(Child->Val, ColorTy::E_WHITE).first->second;
+        if (ChildColor == ColorTy::E_WHITE) {
+          ChildColor = ColorTy::E_GRAY;
+          Q.push(Child);
+        }
+      }
+      Nodes.at(Curr->Val) = ColorTy::E_BLACK;
+    }
+  }
+
+  auto begin() const { return BaseTy::cbegin(); }
+
+  auto end() const { return BaseTy::cend(); }
+};
 
 } // namespace lqvm

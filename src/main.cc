@@ -17,7 +17,7 @@
 
 namespace lqvm {
 
-void PrintDominators(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
+void printDominators(const NodetoDominatorsTy &Dominators, std::ostream &OS) {
   for (auto &&[NodePtr, Doms] : Dominators) {
     OS << NodePtr->Val << ": ";
     for (auto *Dom : Doms) {
@@ -89,14 +89,14 @@ int main(int Argc, char **Argv) {
   }
 #if 0	
   if (PrintDominatorsOpt)
-    PrintDominators(ComputeDominators(G), std::cout);
+    PrintDominators(computeDominators(G), std::cout);
 #endif
   if (PrintIDom->is_set())
-    printIDom(ComputeIDom(G), std::cout);
+    printIDom(computeIDom(G), std::cout);
   if (DumpDomTree->is_set()) {
     std::ofstream DotFile(DumpDomTree->value());
     if (DotFile.is_open()) {
-      auto DomTree = BuildDomTree(G);
+      auto DomTree = buildDomTree(G);
       DomTree.dumpDot(DotFile, "Dom Tree");
     }
 
@@ -108,7 +108,7 @@ int main(int Argc, char **Argv) {
   if (DumpDJ->is_set()) {
     std::ofstream DotFile(DumpDJ->value());
     if (DotFile.is_open()) {
-      auto DJ = ComputeDJ(G);
+      auto DJ = computeDJ(G);
       DJ.dumpDot(DotFile, "DJ graph");
     } else {
       std::cerr << "Unable to open file";
@@ -118,7 +118,7 @@ int main(int Argc, char **Argv) {
   if (DumpDF->is_set()) {
     std::ofstream DotFile(DumpDF->value());
     if (DotFile.is_open()) {
-      auto DF = BuildDF(G);
+      auto DF = buildDF(G);
       DF.dumpDot(DotFile, "Dominance Frontier");
     } else {
       std::cerr << "Unable to open file";
@@ -128,7 +128,7 @@ int main(int Argc, char **Argv) {
   if (DumpIDF->is_set()) {
     std::ofstream DotFile(DumpIDF->value());
     if (DotFile.is_open()) {
-      auto IDF = BuildIDF(G);
+      auto IDF = buildIDF(G);
       IDF.dumpDot(DotFile, "Iterated Dominance Frontier");
     } else {
       std::cerr << "Unable to open file";
