@@ -7,10 +7,6 @@
 
 #include "Dominators.h"
 
-#include <llvm/ADT/BreadthFirstIterator.h>
-#include <llvm/ADT/PostOrderIterator.h>
-#include <llvm/ADT/STLExtras.h>
-
 #include <ranges>
 #include <string_view>
 
