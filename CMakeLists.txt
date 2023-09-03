@@ -1,13 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 project(dominance-frontier)
 
-find_package(LLVM REQUIRED CONFIG)
-
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+add_subdirectory(3rd-party/popl EXCLUDE_FROM_ALL)
 
 set (CMAKE_CXX_STANDARD 20)
-llvm_map_components_to_libnames(llvm_libs support )
 
 
 option(INSOURCEBUILD OFF) # Prevent in-source style builds
@@ -60,7 +56,7 @@ add_executable(domfront ${DOMFRONT_SOURCES})
 target_enable_linter(domfront)
 target_include_directories(domfront PUBLIC include)
 target_compile_features(domfront PUBLIC cxx_std_20)
-target_link_libraries(domfront ${llvm_libs})
+target_link_libraries(domfront popl)
 target_link_libraries(domfront bison_parser)
 enable_warnings(domfront)
 

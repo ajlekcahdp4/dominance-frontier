@@ -8,8 +8,6 @@
 
 #include "Utils.h"
 
-#include <llvm/ADT/GraphTraits.h>
-
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -312,24 +310,3 @@ template <typename NodeTy> std::vector<NodeTy *> breadthFirst(NodeTy *Root) {
 }
 
 } // namespace lqvm
-
-namespace llvm {
-
-template <> class GraphTraits<const lqvm::Node *> {
-public:
-  using NodeRef = const lqvm::Node *;
-  using ChildIteratorType = lqvm::Node::const_iterator;
-  static NodeRef getEntryNode(const lqvm::Node *N) { return N; }
-  static ChildIteratorType child_begin(NodeRef N) { return N->cbegin(); }
-  static ChildIteratorType child_end(NodeRef N) { return N->cend(); }
-};
-
-template <> class GraphTraits<lqvm::Node *> {
-public:
-  using NodeRef = lqvm::Node *;
-  using ChildIteratorType = lqvm::Node::iterator;
-  static NodeRef getEntryNode(lqvm::Node *N) { return N; }
-  static ChildIteratorType child_begin(NodeRef N) { return N->begin(); }
-  static ChildIteratorType child_end(NodeRef N) { return N->end(); }
-};
-} // namespace llvm
