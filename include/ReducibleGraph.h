@@ -9,7 +9,6 @@
 #include "Utils.h"
 
 #include <llvm/ADT/GraphTraits.h>
-#include <llvm/ADT/STLExtras.h>
 
 #include <algorithm>
 #include <cassert>
@@ -18,7 +17,8 @@
 #include <set>
 #include <string_view>
 #include <ranges>
-
+#include <unordered_map>
+#include <functional>
 
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
@@ -254,6 +254,40 @@ public:
     return std::move(Graph);
   }
 };
+
+
+
+template <typename NodeTy>
+std::vector<const NodeTy *> postOrder(const GraphTy<NodeTy> &G) {
+	enum class ColorTy {
+		E_WHITE,
+		E_GRAY,
+		E_BLACK
+	};
+
+	std::vector<const NodeTy *> PO;
+	std::unordered_map<unsigned, ColorTy> Nodes;
+	std::ranges::transform(G, std::inserter(Nodes, Nodes.begin()), [](const auto &Nd) {
+			return std::make_pair(Nd.Val, ColorTy::E_WHITE);
+		});
+	std::function<void(unsigned)> DFSVisit;
+	DFSVisit = [&Nodes, &G, &PO, &DFSVisit](unsigned Val){
+		Nodes.at(Val) = ColorTy::E_GRAY;
+		const auto &Nd = G[Val];
+		for (const auto *Child : Nd){
+			if (Nodes.at(Child->Val) == ColorTy::E_WHITE)
+				DFSVisit(Child->Val);
+		}
+		Nodes.at(Val) = ColorTy::E_BLACK;
+		PO.push_back(&Nd);
+	};
+
+	for (auto Pair : Nodes){
+		if (Pair.second == ColorTy::E_WHITE)
+			DFSVisit(Pair.first);
+	}
+	return PO;
+}
 
 } // namespace lqvm
 

@@ -6,11 +6,12 @@
 // ----------------------------------------------------------------------------
 #pragma once
 
-#include <llvm/ADT/STLExtras.h>
 
 #include <algorithm>
 #include <ranges>
 #include <vector>
+#include <cassert>
+
 namespace lqvm {
 namespace utils {
 template <typename Cont>
@@ -43,8 +44,8 @@ inline auto first_match(const ContTy &Cont1, const ContTy &Cont2)
   return FirstIt;
 }
 
-template <std::ranges::forward_range RangeTy>
-auto drop_begin(const RangeTy &R) {
+template <std::ranges::input_range RangeTy>
+auto drop_begin(RangeTy R) {
   return R;
 }
 

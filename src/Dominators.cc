@@ -79,7 +79,8 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
   bool Changed = true;
   while (Changed) {
     Changed = false;
-    auto RPO = llvm::ReversePostOrderTraversal(&G.front());
+		auto PO = postOrder(G);
+		auto RPO = std::views::reverse(PO);
     auto PickParent = [RPO](const auto *Nd) -> const Node * {
       for (const auto *Parent : Nd->Parents) {
         if (utils::GetIndexIn(Parent, RPO) < utils::GetIndexIn(Nd, RPO))
@@ -91,7 +92,6 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
       const auto *NewIdom = PickParent(CNode);
       for (auto *Parent : CNode->Parents) {
         if (Parent != NewIdom && IDom[Parent]) {
-          auto PO = llvm::post_order(&G.front());
           NewIdom = IntersectNodes(Parent, NewIdom, PO, IDom);
         }
       }
