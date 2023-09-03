@@ -27,7 +27,7 @@ number      (0|[1-9][0-9]*)
 
 %%
 
-"--"            { return parser::make_LINE(); }
+"->"            { return parser::make_ARROW(); }
 {number}        { return parser::make_UNSIGNED(std::stoi(yytext)); }
 [ \t\n\r]       { }
 .               { throw parser::syntax_error{"Unexpected symbol"}; }

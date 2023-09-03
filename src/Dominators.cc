@@ -7,14 +7,11 @@
 
 #include "Dominators.h"
 
-#include <llvm/ADT/BreadthFirstIterator.h>
-#include <llvm/ADT/PostOrderIterator.h>
-#include <llvm/ADT/STLExtras.h>
-
+#include <ranges>
 #include <string_view>
 
 namespace lqvm {
-size_t ComputeHash(const NodetoDominatorsTy &M) {
+size_t computeHash(const NodetoDominatorsTy &M) {
   size_t Hash = 0;
   for (auto &&[NodePtr, Doms] : M) {
     for (auto *Dom : Doms)
@@ -23,7 +20,7 @@ size_t ComputeHash(const NodetoDominatorsTy &M) {
   return Hash;
 }
 
-void ComputeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
+void computeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
   std::vector<const Node *> AllNodesSet;
   for (auto &&Nd : G)
     AllNodesSet.push_back(&Nd);
@@ -31,46 +28,48 @@ void ComputeDominatorsIteration(const GraphTy<Node> &G, NodetoDominatorsTy &M) {
     std::vector<const Node *> Doms = AllNodesSet;
     for (auto *Parent : Nd.Parents)
       if (M.contains(Parent))
-        Doms = utils::OrderedIntersection(Doms, M.at(Parent));
+        Doms = utils::orderedIntersection(Doms, M.at(Parent));
     Doms.push_back(&Nd);
-    if (llvm::find(G, Nd) == G.begin())
+    if (Nd.Val != G.getEntryNodeVal())
       M[&Nd] = std::move(Doms);
   }
 }
 
-NodetoDominatorsTy ComputeDominators(const GraphTy<Node> &G) {
+NodetoDominatorsTy computeDominators(const GraphTy<Node> &G) {
   NodetoDominatorsTy NodeToDominators;
   NodeToDominators[&G.front()] = std::vector<const Node *>{&G.front()};
-  auto NewHash = ComputeHash(NodeToDominators);
+  auto NewHash = computeHash(NodeToDominators);
   auto OldHash = NewHash;
   do {
     OldHash = NewHash;
-    ComputeDominatorsIteration(G, NodeToDominators);
-    NewHash = ComputeHash(NodeToDominators);
+    computeDominatorsIteration(G, NodeToDominators);
+    NewHash = computeHash(NodeToDominators);
   } while (NewHash != OldHash);
   return NodeToDominators;
 }
 
-const Node *IntersectNodes(const Node *First, const Node *Second, auto PO,
+const Node *intersectNodes(const Node *First, const Node *Second, auto PO,
                            const std::map<const Node *, const Node *> &IDoms) {
+  assert(First);
+  assert(Second);
   auto *Finger1 = First;
   auto *Finger2 = Second;
   while (Finger1 != Finger2) {
-    auto Idx1 = utils::GetIndexIn(Finger1, PO);
-    auto Idx2 = utils::GetIndexIn(Finger2, PO);
+    auto Idx1 = utils::getIndexIn(Finger1, PO);
+    auto Idx2 = utils::getIndexIn(Finger2, PO);
     while (Idx1 < Idx2) {
       Finger1 = IDoms.at(Finger1);
-      Idx1 = utils::GetIndexIn(Finger1, PO);
+      Idx1 = utils::getIndexIn(Finger1, PO);
     }
     while (Idx2 < Idx1) {
       Finger2 = IDoms.at(Finger2);
-      Idx2 = utils::GetIndexIn(Finger2, PO);
+      Idx2 = utils::getIndexIn(Finger2, PO);
     }
   }
   return Finger1;
 }
 
-std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
+std::map<const Node *, const Node *> computeIDom(const GraphTy<Node> &G) {
   std::map<const Node *, const Node *> IDom;
   for (auto &&Nd : G)
     IDom[&Nd] = nullptr;
@@ -78,20 +77,22 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
   bool Changed = true;
   while (Changed) {
     Changed = false;
-    auto RPO = llvm::ReversePostOrderTraversal(&G.front());
+    auto PO = PostOrder(G);
+    auto RPO = std::views::reverse(PO);
     auto PickParent = [RPO](const auto *Nd) -> const Node * {
       for (const auto *Parent : Nd->Parents) {
-        if (utils::GetIndexIn(Parent, RPO) < utils::GetIndexIn(Nd, RPO))
+        if (utils::getIndexIn(Parent, RPO) < utils::getIndexIn(Nd, RPO))
           return Parent;
       }
       return nullptr;
     };
-    for (auto *CNode : llvm::drop_begin(RPO)) {
+    for (auto *CNode : RPO | std::views::drop(1)) {
       const auto *NewIdom = PickParent(CNode);
       for (auto *Parent : CNode->Parents) {
-        if (Parent != NewIdom && IDom[Parent]) {
-          auto PO = llvm::post_order(&G.front());
-          NewIdom = IntersectNodes(Parent, NewIdom, PO, IDom);
+        if (!NewIdom)
+          NewIdom = Parent;
+        else if (Parent != NewIdom && IDom[Parent]) {
+          NewIdom = intersectNodes(Parent, NewIdom, PO, IDom);
         }
       }
       if (IDom[CNode] != NewIdom) {
@@ -104,16 +105,16 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
   return IDom;
 }
 
-GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
-  auto IDom = ComputeIDom(G);
+GraphTy<Node> buildDomTree(const GraphTy<Node> &G) {
+  auto IDom = computeIDom(G);
   GraphTy<Node> T;
   T.reserve(G.size());
   for (auto [Nd, Dom] : IDom) {
     auto IsCurNode = [Nd](const auto &Pair) { return Pair.second == Nd; };
     auto *TreeNode = T.getOrInsertNode(Nd->Val);
-    auto Found = std::find_if(IDom.begin(), IDom.end(), IsCurNode);
+    auto Found = std::ranges::find_if(IDom, IsCurNode);
     while (Found != IDom.end()) {
-      if (llvm::find(G, *Found->first) != G.begin())
+      if (Found->first->Val != G.getEntryNodeVal())
         TreeNode->push_back(T.getOrInsertNode(Found->first->Val));
       Found = std::find_if(std::next(Found), IDom.end(), IsCurNode);
     }
@@ -121,21 +122,21 @@ GraphTy<Node> BuildDomTree(const GraphTy<Node> &G) {
   return T;
 }
 
-GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
-  auto IDom = ComputeIDom(G);
+GraphTy<DJNode> computeDJ(const GraphTy<Node> &G) {
+  auto IDom = computeIDom(G);
   GraphTy<DJNode> DJ;
   DJ.reserve(G.size());
   for (auto &&Nd : G)
     DJ.emplace_back(Nd.Val);
   for (auto [Nd, Dom] : IDom)
-    if (llvm::find(G, *Nd) != G.begin())
+    if (Nd->Val != G.getEntryNodeVal())
       DJ.getOrInsertNode(Dom->Val)->adoptChild(DJ.getOrInsertNode(Nd->Val));
   assert(DJ.size() == G.size());
   for (auto &Nd : G) {
-    if (Nd.Parents.size() > 1 && llvm::find(G, Nd) != G.begin())
+    if (Nd.Parents.size() > 1 && Nd.Val != G.getEntryNodeVal())
       for (auto *Parent : Nd.Parents) {
         auto &Vec = *DJ.getOrInsertNode(Parent->Val);
-        if (std::find_if(Vec.begin(), Vec.end(), [&Nd, &DJ](const auto &Pair) {
+        if (std::ranges::find_if(Vec, [&Nd, &DJ](const auto &Pair) {
               return Pair.first == DJ.getOrInsertNode(Nd.Val);
             }) == Vec.end())
           DJ.getOrInsertNode(Parent->Val)
@@ -145,24 +146,25 @@ GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G) {
   return DJ;
 }
 
-GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
-  auto DJ = ComputeDJ(G);
+GraphTy<Node> buildDF(const GraphTy<Node> &G) {
+  auto DJ = computeDJ(G);
   GraphTy<Node> DF;
   for (auto &&Nd : G)
     DF.getOrInsertNode(Nd.Val);
-  auto BastardOwners = llvm::make_filter_range(DJ, [](const DJNode &Nd) {
+  auto HasBastard = [](const DJNode &Nd) {
     return std::any_of(Nd.begin(), Nd.end(),
                        [](const auto &Pair) { return !Pair.second; });
-  });
+  };
+  auto BastardOwners = DJ | std::views::filter(HasBastard);
   for (auto &&BO : BastardOwners) {
     for (auto [Child, IsTrueBorn] : BO) {
       if (!IsTrueBorn) {
         auto NCAPath = findPathToNCA(&BO, Child);
-        for (const auto *Nd : llvm::drop_end(NCAPath)) {
+        for (const auto *Nd : utils::drop_end(NCAPath)) {
           // check duplicate
           auto *DFNd = DF.getOrInsertNode(Nd->Val);
           auto *DFChild = DF.getOrInsertNode(Child->Val);
-          if (!llvm::is_contained(*DFNd, DFChild))
+          if (!utils::is_contained(*DFNd, DFChild))
             DFNd->adoptChild(DFChild);
         }
       }
@@ -171,13 +173,14 @@ GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
   return DF;
 }
 
-GraphTy<Node> BuildIDF(const GraphTy<Node> &G) {
-  auto IDF = BuildDF(G);
+GraphTy<Node> buildIDF(const GraphTy<Node> &G) {
+  auto IDF = buildDF(G);
   for (auto &&CurrNode : IDF) {
-    auto BFS = llvm::drop_begin(llvm::breadth_first(&CurrNode));
-    for (auto *Des : BFS) {
-      if (!llvm::is_contained(CurrNode, Des))
-        CurrNode.adoptChild(Des);
+    auto BFS = BreadthFirst(&CurrNode);
+    for (auto DesIt = std::next(BFS.begin()), End = BFS.end(); DesIt != End;
+         ++DesIt) {
+      if (!utils::is_contained(CurrNode, *DesIt))
+        CurrNode.adoptChild(*DesIt);
     }
   }
   return IDF;

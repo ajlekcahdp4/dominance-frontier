@@ -14,22 +14,38 @@
 #include <vector>
 namespace lqvm {
 using NodetoDominatorsTy = std::map<const Node *, std::vector<const Node *>>;
-NodetoDominatorsTy ComputeDominators(const GraphTy<Node> &G);
+NodetoDominatorsTy computeDominators(const GraphTy<Node> &G);
 
-std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G);
+std::map<const Node *, const Node *> computeIDom(const GraphTy<Node> &G);
 
-GraphTy<Node> BuildDomTree(const GraphTy<Node> &G);
+GraphTy<Node> buildDomTree(const GraphTy<Node> &G);
 
 struct DJNode final
-    : std::vector<std::pair<DJNode *, bool>> { // bool = true for trueborn
-                                               // children
+    : private std::vector<std::pair<DJNode *, bool>> { // bool = true for
+                                                       // trueborn
+                                                       // children
   std::set<DJNode *> Parents;
   using ValueTy = unsigned;
   ValueTy Val;
   DJNode(ValueTy Value) : vector(), Val(Value) {}
 
+  using vector::back;
+  using vector::begin;
+  using vector::cbegin;
+  using vector::cend;
+  using vector::end;
+  using vector::front;
+  using vector::push_back;
+  using vector::operator[];
+  using vector::erase;
+  using vector::size;
+
+  using typename vector::const_iterator;
+  using typename vector::iterator;
+  using typename vector::value_type;
+
   bool isBastardOf(const DJNode *Parent) const {
-    auto Found = llvm::find_if(
+    auto Found = std::ranges::find_if(
         *Parent, [this](const auto &Pair) { return Pair.first == this; });
     if (Found == Parent->end())
       return false;
@@ -37,19 +53,19 @@ struct DJNode final
   }
 
   void addBastard(DJNode *Child) {
-    assert(std::find_if(begin(), end(),
-                        [Child](const auto &Pair) {
-                          return Pair.first == Child;
-                        }) == end() &&
+    assert(std::ranges::find_if(*this,
+                                [Child](const auto &Pair) {
+                                  return Pair.first == Child;
+                                }) == end() &&
            "Attempt to duplicate bastard.");
     emplace_back(Child, false);
   }
 
   void adoptChild(DJNode *Child) {
-    assert(std::find_if(begin(), end(),
-                        [Child](const auto &Pair) {
-                          return Pair.first == Child;
-                        }) == end() &&
+    assert(std::ranges::find_if(*this,
+                                [Child](const auto &Pair) {
+                                  return Pair.first == Child;
+                                }) == end() &&
            "Attempt to duplicate child.");
     emplace_back(Child, true);
     Child->addParent(this);
@@ -79,9 +95,10 @@ std::vector<const NodeTy *> pathUp(const NodeTy *From) {
   const auto *CurrNode = From;
   Path.push_back(CurrNode);
   while (true) {
-    auto Found = llvm::find_if(CurrNode->Parents, [CurrNode](const auto *P) {
-      return !CurrNode->isBastardOf(P); // A.K.A. trueborn
-    });
+    auto Found =
+        std::ranges::find_if(CurrNode->Parents, [CurrNode](const auto *P) {
+          return !CurrNode->isBastardOf(P); // A.K.A. trueborn
+        });
     if (Found == CurrNode->Parents.end())
       break;
     CurrNode = *Found;
@@ -102,9 +119,9 @@ std::vector<const NodeTy *> findPathToNCA(const NodeTy *From,
   return Res;
 }
 
-GraphTy<DJNode> ComputeDJ(const GraphTy<Node> &G);
+GraphTy<DJNode> computeDJ(const GraphTy<Node> &G);
 
-GraphTy<Node> BuildDF(const GraphTy<Node> &G);
+GraphTy<Node> buildDF(const GraphTy<Node> &G);
 
-GraphTy<Node> BuildIDF(const GraphTy<Node> &G);
+GraphTy<Node> buildIDF(const GraphTy<Node> &G);
 } // namespace lqvm

@@ -8,27 +8,44 @@
 
 #include "Utils.h"
 
-#include <llvm/ADT/GraphTraits.h>
-#include <llvm/ADT/STLExtras.h>
-
 #include <algorithm>
 #include <cassert>
+#include <functional>
 #include <ostream>
+#include <queue>
 #include <random>
+#include <ranges>
 #include <set>
 #include <string_view>
+#include <unordered_map>
 
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
 
-struct Node final : std::vector<Node *> {
+struct Node final : private std::vector<Node *> {
   std::set<Node *> Parents;
   using ValueTy = unsigned;
   ValueTy Val;
   Node(ValueTy Value) : vector(), Val(Value) {}
+  Node() : Val{} {}
+
+  using vector::back;
+  using vector::begin;
+  using vector::cbegin;
+  using vector::cend;
+  using vector::end;
+  using vector::front;
+  using vector::push_back;
+  using vector::operator[];
+  using vector::erase;
+  using vector::size;
+
+  using typename vector::const_iterator;
+  using typename vector::iterator;
+  using typename vector::value_type;
 
   void adoptChild(Node *Child) {
-    assert(std::find(begin(), end(), Child) == end() &&
+    assert(std::ranges::find(*this, Child) == end() &&
            "Attempt to duplicate child.");
     push_back(Child);
     Child->addParent(this);
@@ -37,9 +54,9 @@ struct Node final : std::vector<Node *> {
   void addParent(Node *Parent) { Parents.insert(Parent); }
 
   void abandonChild(Node *Child) {
-    assert(std::find(begin(), end(), Child) != end() &&
+    assert(std::ranges::find(*this, Child) != end() &&
            "Attempt to remove non-existent child.");
-    llvm::erase_value(*this, Child);
+    erase(std::remove(begin(), end(), Child), end());
     Child->removeParent(this);
   }
 
@@ -57,16 +74,29 @@ struct Node final : std::vector<Node *> {
   void removeParent(Node *Parent) { Parents.erase(Parent); }
 };
 
-template <typename NodeTy> struct GraphTy final : public std::vector<NodeTy> {
+template <typename NodeTy> struct GraphTy final : private std::vector<NodeTy> {
 private:
   using BaseTy = std::vector<NodeTy>;
 
 public:
   using BaseTy::back;
   using BaseTy::begin;
+  using BaseTy::cbegin;
+  using BaseTy::cend;
+  using BaseTy::emplace_back;
   using BaseTy::end;
   using BaseTy::front;
+  using BaseTy::push_back;
   using BaseTy::operator[];
+  using BaseTy::erase;
+  using BaseTy::reserve;
+  using BaseTy::size;
+
+  using typename BaseTy::const_iterator;
+  using typename BaseTy::iterator;
+  using typename BaseTy::value_type;
+
+  using ValueTy = typename NodeTy::ValueTy;
 
   GraphTy() = default;
   GraphTy(const GraphTy &) = delete;
@@ -74,8 +104,8 @@ public:
   GraphTy(GraphTy &&) = default;
   GraphTy &operator=(GraphTy &&) = default;
 
-  NodeTy *getOrInsertNode(typename NodeTy::ValueTy Val) {
-    auto Found = llvm::find_if(
+  NodeTy *getOrInsertNode(ValueTy Val) {
+    auto Found = std::ranges::find_if(
         *this, [Val](const NodeTy &Node) { return Node.Val == Val; });
     if (Found == end()) {
       BaseTy::emplace_back(Val);
@@ -84,13 +114,15 @@ public:
     return std::addressof(*Found);
   }
 
-  unsigned getIndex(typename NodeTy::ValueTy Val) const {
-    auto Found =
-        llvm::find_if(*this, [Val](const NodeTy &Nd) { return Nd.Val == Val; });
+  unsigned getIndex(ValueTy Val) const {
+    auto Found = std::ranges::find_if(
+        *this, [Val](const NodeTy &Nd) { return Nd.Val == Val; });
     assert(Found != end() &&
            "Cannot found vertex for which index for requested.");
     return std::distance(begin(), Found);
   }
+
+  ValueTy getEntryNodeVal() const { return 0; }
 
   void dumpDot(std::ostream &OS, std::string_view Title) const;
 };
@@ -150,8 +182,10 @@ class ReducibleGraphBuilder final {
     case 2: {
       switch (getUniformRandom(0, 2)) {
       case 0: {
-        llvm::for_each(*Nd, [New](Node *Child) { New->adoptChild(Child); });
-        llvm::for_each(*Nd, [Nd](Node *Child) { Nd->abandonChild(Child); });
+        for (auto &&Child : *Nd) {
+          New->adoptChild(Child);
+          Nd->abandonChild(Child);
+        }
         Nd->adoptChild(New);
         break;
       }
@@ -163,9 +197,10 @@ class ReducibleGraphBuilder final {
         break;
       }
       case 2: {
-
-        llvm::for_each(*Nd, [New](Node *Child) { New->adoptChild(Child); });
-        llvm::for_each(*Nd, [Nd](Node *Child) { Nd->abandonChild(Child); });
+        for (auto &&Child : *Nd) {
+          New->adoptChild(Child);
+          Nd->abandonChild(Child);
+        }
         Nd->adoptChild(New);
         Nd->adoptChild(New->back());
         break;
@@ -186,7 +221,7 @@ public:
   }
 
   void addSelfLoop(Node *Nd) {
-    if (Nd->size() < 2 && std::find(Nd->begin(), Nd->end(), Nd) == Nd->end())
+    if (Nd->size() < 2 && std::ranges::find(*Nd, Nd) == Nd->end())
       Nd->adoptChild(Nd);
   }
   Node *insertNode() {
@@ -209,7 +244,7 @@ public:
       };
     }
     for (auto &&Nd : Graph) {
-      if (llvm::is_contained(Nd, &Nd))
+      if (utils::is_contained(Nd, &Nd))
         Nd.abandonChild(&Nd);
     }
   }
@@ -220,25 +255,66 @@ public:
   }
 };
 
+template <typename NodeTy>
+class PostOrder final : private std::vector<const NodeTy *> {
+  using BaseTy = std::vector<const NodeTy *>;
+
+public:
+  explicit PostOrder(const GraphTy<NodeTy> &G) {
+    enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
+    std::unordered_map<const NodeTy *, ColorTy> Nodes;
+    std::ranges::transform(
+        G, std::inserter(Nodes, Nodes.begin()),
+        [](const auto &Nd) { return std::make_pair(&Nd, ColorTy::E_WHITE); });
+    std::function<void(const NodeTy *)> DFSVisit;
+    DFSVisit = [&Nodes, &G, this, &DFSVisit](const NodeTy *Start) {
+      Nodes.at(Start) = ColorTy::E_GRAY;
+      for (const auto *Child : *Start) {
+        if (Nodes.at(Child) == ColorTy::E_WHITE)
+          DFSVisit(Child);
+      }
+      Nodes.at(Start) = ColorTy::E_BLACK;
+      BaseTy::push_back(Start);
+    };
+    DFSVisit(&G.front());
+  }
+
+  auto begin() const { return BaseTy::cbegin(); }
+
+  auto end() const { return BaseTy::cend(); }
+};
+
+template <typename NodeTy>
+class BreadthFirst final : private std::vector<NodeTy *> {
+  using BaseTy = std::vector<NodeTy *>;
+
+public:
+  explicit BreadthFirst(NodeTy *Start) {
+    enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
+    std::unordered_map<unsigned, ColorTy> Nodes;
+    Nodes[Start->Val] = ColorTy::E_GRAY;
+    std::queue<NodeTy *> Q;
+    Q.push(Start);
+    while (!Q.empty()) {
+      auto *Curr = Q.front();
+      BaseTy::push_back(Curr);
+      Q.pop();
+      Nodes.emplace(Curr->Val, ColorTy::E_WHITE);
+      for (auto *Child : *Curr) {
+        auto &ChildColor =
+            Nodes.emplace(Child->Val, ColorTy::E_WHITE).first->second;
+        if (ChildColor == ColorTy::E_WHITE) {
+          ChildColor = ColorTy::E_GRAY;
+          Q.push(Child);
+        }
+      }
+      Nodes.at(Curr->Val) = ColorTy::E_BLACK;
+    }
+  }
+
+  auto begin() const { return BaseTy::cbegin(); }
+
+  auto end() const { return BaseTy::cend(); }
+};
+
 } // namespace lqvm
-
-namespace llvm {
-
-template <> class GraphTraits<const lqvm::Node *> {
-public:
-  using NodeRef = const lqvm::Node *;
-  using ChildIteratorType = lqvm::Node::const_iterator;
-  static NodeRef getEntryNode(const lqvm::Node *N) { return N; }
-  static ChildIteratorType child_begin(NodeRef N) { return N->cbegin(); }
-  static ChildIteratorType child_end(NodeRef N) { return N->cend(); }
-};
-
-template <> class GraphTraits<lqvm::Node *> {
-public:
-  using NodeRef = lqvm::Node *;
-  using ChildIteratorType = lqvm::Node::iterator;
-  static NodeRef getEntryNode(lqvm::Node *N) { return N; }
-  static ChildIteratorType child_begin(NodeRef N) { return N->begin(); }
-  static ChildIteratorType child_end(NodeRef N) { return N->end(); }
-};
-} // namespace llvm

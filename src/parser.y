@@ -60,7 +60,7 @@ static lqvm::parser::symbol_type yylex(lqvm::scanner &p_scanner, lqvm::Driver &p
 %define parse.error verbose
 %define api.token.prefix {TOKEN_}
 
-%token LINE     "--"
+%token ARROW     "->"
 %token <unsigned> UNSIGNED "unsigned"
 %token EOF 0 "end of file"
 
@@ -81,10 +81,10 @@ graph: graph edge {
   }
   | %empty {
     $$ = lqvm::GraphTy<Node>();
-    $$.reserve(Driver.MaxVert);
+    $$.reserve(1000); // FIXME: Came up with a solution to avoid this.
   }
 
-edge: UNSIGNED LINE UNSIGNED { $$ = std::make_pair($1, $3 ); }
+edge: UNSIGNED ARROW UNSIGNED { $$ = std::make_pair($1, $3 ); }
 
 %%
 
