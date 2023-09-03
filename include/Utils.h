@@ -44,7 +44,7 @@ inline auto first_match(const ContTy &Cont1, const ContTy &Cont2)
 }
 
 template <std::ranges::input_range RangeTy> auto drop_begin(RangeTy R) {
-  return R;
+  return R | std::views::drop(1);
 }
 
 template <std::ranges::forward_range RangeTy> auto drop_end(const RangeTy &R) {

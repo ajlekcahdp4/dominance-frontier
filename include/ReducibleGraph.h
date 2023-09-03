@@ -260,26 +260,22 @@ std::vector<const NodeTy *> postOrder(const GraphTy<NodeTy> &G) {
   enum class ColorTy { E_WHITE, E_GRAY, E_BLACK };
 
   std::vector<const NodeTy *> PO;
-  std::unordered_map<unsigned, ColorTy> Nodes;
+  std::unordered_map<const NodeTy *, ColorTy> Nodes;
   std::ranges::transform(
       G, std::inserter(Nodes, Nodes.begin()),
-      [](const auto &Nd) { return std::make_pair(Nd.Val, ColorTy::E_WHITE); });
-  std::function<void(unsigned)> DFSVisit;
-  DFSVisit = [&Nodes, &G, &PO, &DFSVisit](unsigned Val) {
-    Nodes.at(Val) = ColorTy::E_GRAY;
-    const auto &Nd = G[Val];
-    for (const auto *Child : Nd) {
-      if (Nodes.at(Child->Val) == ColorTy::E_WHITE)
-        DFSVisit(Child->Val);
+      [](const auto &Nd) { return std::make_pair(&Nd, ColorTy::E_WHITE); });
+  std::function<void(const NodeTy *)> DFSVisit;
+  DFSVisit = [&Nodes, &G, &PO, &DFSVisit](const NodeTy *Start) {
+    Nodes.at(Start) = ColorTy::E_GRAY;
+    for (const auto *Child : *Start) {
+      if (Nodes.at(Child) == ColorTy::E_WHITE)
+        DFSVisit(Child);
     }
-    Nodes.at(Val) = ColorTy::E_BLACK;
-    PO.push_back(&Nd);
+    Nodes.at(Start) = ColorTy::E_BLACK;
+    PO.push_back(Start);
   };
 
-  for (auto Pair : Nodes) {
-    if (Pair.second == ColorTy::E_WHITE)
-      DFSVisit(Pair.first);
-  }
+  DFSVisit(&G.front());
   return PO;
 }
 

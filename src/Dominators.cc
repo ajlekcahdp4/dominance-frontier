@@ -50,7 +50,9 @@ NodetoDominatorsTy ComputeDominators(const GraphTy<Node> &G) {
 
 const Node *IntersectNodes(const Node *First, const Node *Second, auto PO,
                            const std::map<const Node *, const Node *> &IDoms) {
-  auto *Finger1 = First;
+assert (First);
+assert(Second);
+	auto *Finger1 = First;
   auto *Finger2 = Second;
   while (Finger1 != Finger2) {
     auto Idx1 = utils::GetIndexIn(Finger1, PO);
@@ -84,10 +86,11 @@ std::map<const Node *, const Node *> ComputeIDom(const GraphTy<Node> &G) {
       }
       return nullptr;
     };
-    for (auto *CNode : utils::drop_begin(RPO)) {
+    for (auto *CNode : RPO | std::views::drop(1)) {
       const auto *NewIdom = PickParent(CNode);
       for (auto *Parent : CNode->Parents) {
-        if (Parent != NewIdom && IDom[Parent]) {
+				if (!NewIdom) NewIdom = Parent;
+        else if (Parent != NewIdom && IDom[Parent]) {
           NewIdom = IntersectNodes(Parent, NewIdom, PO, IDom);
         }
       }
