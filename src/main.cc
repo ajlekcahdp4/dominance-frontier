@@ -48,31 +48,38 @@ GraphTy<Node> parse_cfg() {
 
 using namespace lqvm;
 int main(int Argc, char **Argv) {
-	popl::OptionParser OP("Allowed Options");
+  popl::OptionParser OP("Allowed Options");
 
-	int Seed = 1;
-	unsigned GenIterations;
+  int Seed = 1;
+  unsigned GenIterations;
 
-	auto Help = OP.add<popl::Switch>("h", "help", "Print help message");
-	OP.add<popl::Implicit<int>>("s", "seed", "Random seed", 1, &Seed);
-	OP.add<popl::Implicit<unsigned>>("n", "gen-iterations", "Number of iterations for CFG generation", 10, &GenIterations);
-	auto GenerateCFG = OP.add<popl::Switch>("", "generate-cfg", "Forces to generate CFG, not take it as an input");
-	auto PrintIDom = OP.add<popl::Switch>("", "print-idom", "Print immediate dominators");
-	auto DumpCFG = OP.add<popl::Value<std::string>>("", "dump-cfg", "Dump CFG to .dot file");
-	auto DumpDomTree = OP.add<popl::Value<std::string>>("", "dump-dom-tree", "Dump dominators tree to .dot file");
-	auto DumpDJ = OP.add<popl::Value<std::string>>("", "dump-dj", "Dump DJ graph to .dot file");
-	auto DumpDF = OP.add<popl::Value<std::string>>("", "dump-df", "Dump dominance frontier to .dot file");
-	auto DumpIDF = OP.add<popl::Value<std::string>>("", "dump-idf", "Dump iterated dominance frontier to .dot file");
-	OP.parse(Argc, Argv);
+  auto Help = OP.add<popl::Switch>("h", "help", "Print help message");
+  OP.add<popl::Implicit<int>>("s", "seed", "Random seed", 1, &Seed);
+  OP.add<popl::Implicit<unsigned>>("n", "gen-iterations",
+                                   "Number of iterations for CFG generation",
+                                   10, &GenIterations);
+  auto GenerateCFG = OP.add<popl::Switch>(
+      "", "generate-cfg", "Forces to generate CFG, not take it as an input");
+  auto PrintIDom =
+      OP.add<popl::Switch>("", "print-idom", "Print immediate dominators");
+  auto DumpCFG =
+      OP.add<popl::Value<std::string>>("", "dump-cfg", "Dump CFG to .dot file");
+  auto DumpDomTree = OP.add<popl::Value<std::string>>(
+      "", "dump-dom-tree", "Dump dominators tree to .dot file");
+  auto DumpDJ = OP.add<popl::Value<std::string>>("", "dump-dj",
+                                                 "Dump DJ graph to .dot file");
+  auto DumpDF = OP.add<popl::Value<std::string>>(
+      "", "dump-df", "Dump dominance frontier to .dot file");
+  auto DumpIDF = OP.add<popl::Value<std::string>>(
+      "", "dump-idf", "Dump iterated dominance frontier to .dot file");
+  OP.parse(Argc, Argv);
 
-	if (Help->is_set())
-	{
-		std::cout << OP.help()<<std::endl;
-		return EXIT_SUCCESS;
-	}
+  if (Help->is_set()) {
+    std::cout << OP.help() << std::endl;
+    return EXIT_SUCCESS;
+  }
 
-
-	GraphTy<Node> G;
+  GraphTy<Node> G;
   if (GenerateCFG->is_set()) {
     ReducibleGraphBuilder GB(GenIterations, Seed);
     G = GB.generate();
