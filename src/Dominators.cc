@@ -176,7 +176,7 @@ GraphTy<Node> BuildDF(const GraphTy<Node> &G) {
 GraphTy<Node> BuildIDF(const GraphTy<Node> &G) {
   auto IDF = BuildDF(G);
   for (auto &&CurrNode : IDF) {
-    auto BFS = llvm::breadth_first(&CurrNode);
+    auto BFS = breadthFirst(&CurrNode);
     for (auto DesIt = std::next(BFS.begin()), End = BFS.end(); DesIt != End;
          ++DesIt) {
       if (!utils::is_contained(CurrNode, *DesIt))

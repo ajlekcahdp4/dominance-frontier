@@ -19,6 +19,7 @@
 #include <ranges>
 #include <unordered_map>
 #include <functional>
+#include <queue>
 
 // LQVM - Low Quality Virtual Machine
 namespace lqvm {
@@ -288,6 +289,37 @@ std::vector<const NodeTy *> postOrder(const GraphTy<NodeTy> &G) {
 	}
 	return PO;
 }
+
+template <typename NodeTy>
+std::vector<NodeTy *> breadthFirst(NodeTy *Root) {
+	enum class ColorTy {
+		E_WHITE,
+		E_GRAY,
+		E_BLACK
+	};
+	std::vector<NodeTy *> BF;
+	std::unordered_map<unsigned, ColorTy> Nodes;
+	Nodes[Root->Val] = ColorTy::E_GRAY;
+	std::queue<NodeTy *> Q;
+	Q.push(Root);
+
+	while (!Q.empty()){
+		auto *Curr = Q.front();
+		BF.push_back(Curr);
+		Q.pop();
+		Nodes.emplace(Curr->Val, ColorTy::E_WHITE);
+		for (auto *Child : *Curr) {
+			auto &ChildColor = Nodes.emplace(Child->Val, ColorTy::E_WHITE).first->second;
+			if (ChildColor == ColorTy::E_WHITE)	{
+				ChildColor = ColorTy::E_GRAY;
+				Q.push(Child);
+			}
+		}
+		Nodes.at(Curr->Val) = ColorTy::E_BLACK;
+	}
+	return BF;
+}
+
 
 } // namespace lqvm
 
