@@ -8,7 +8,7 @@
 #include "ReducibleGraph.h"
 #include "driver.h"
 
-#include <popl/popl.hpp>
+#include <popl.hpp>
 
 #include <fstream>
 #include <iostream>

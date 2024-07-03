@@ -1,9 +1,11 @@
 # Dominance Frontier
 
 # Dependencies
+
 1. LLVM
 
 ## How To Run:
+
 ```shell
 git clone git@github.com:ajlekcahdp4/dominance-frontier.git
 cd dominance-frontier
@@ -14,6 +16,7 @@ cmake --build .
 ```
 
 ## Options
+
 ```shell
 domfront options:
 
@@ -29,4 +32,5 @@ domfront options:
 ```
 
 ## Examples
+
 To explore examples of input CFG and output see [examples](./examples/)

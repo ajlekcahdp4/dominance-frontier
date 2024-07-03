@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 project(dominance-frontier)
 
-add_subdirectory(3rd-party/popl EXCLUDE_FROM_ALL)
-
 set (CMAKE_CXX_STANDARD 20)
 
 
@@ -56,9 +54,10 @@ add_executable(domfront ${DOMFRONT_SOURCES})
 target_enable_linter(domfront)
 target_include_directories(domfront PUBLIC include)
 target_compile_features(domfront PUBLIC cxx_std_20)
-target_link_libraries(domfront popl)
-target_link_libraries(domfront bison_parser)
+target_link_libraries(domfront PRIVATE bison_parser INTERFACE popl)
 enable_warnings(domfront)
+
+install (TARGETS domfront DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 option(BUILD_DOCS OFF)
 if(BUILD_DOCS)
