@@ -1,18 +1,28 @@
 # Dominance Frontier
 
-# Dependencies
+## Install ALL the dependencies
 
-1. LLVM
+Install nix if you still don't have it. See https://nixos.org/download/
+
+```sh
+nix develop
+# Or (if you use direnv)
+direnv allow
+```
 
 ## How To Run:
 
-```shell
-git clone git@github.com:ajlekcahdp4/dominance-frontier.git
-cd dominance-frontier
+```sh
 cmake -S . -B build
-cd build
-cmake --build .
-./domfront --help
+cmake --build build
+build/domfront --help
+```
+
+Or build package using Nix:
+
+```sh
+nix build .
+result/bin/domfront --help
 ```
 
 ## Options
